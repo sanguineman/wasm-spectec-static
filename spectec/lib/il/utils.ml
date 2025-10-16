@@ -1,6 +1,8 @@
-open Il.Ast
+open Ast
 open Xl.Atom
 open Util.Source
+
+(* convert string to atom *)
 
 let wrap_atom (s : string) : atom =
   match s with
@@ -78,6 +80,7 @@ let wrap_atom (s : string) : atom =
       SilentAtom s $ no_region
   | _ -> Atom s $ no_region
 
+(* no_region constructors *)
 let wrap_var_t (s : string) : typ' = VarT (s $ no_region, [])
 let wrap_iter_t (i : iter) (t : typ') : typ' = IterT (t $ no_region, i)
 
@@ -88,6 +91,8 @@ let with_fresh_val (typ : typ') : vnote =
 let with_typ (typ : typ') (v : value') : value = v $$$ with_fresh_val typ
 
 type symbol = NT of value | Term of string
+
+(* convert a symbol list to a CaseV value *)
 
 let wrap_case_v (vs : symbol list) : value' =
   let rec build_mixop acc_mixop acc_terms = function
@@ -126,6 +131,8 @@ let id_of_case_v (v : value) : string =
 
 type syntax' = string list list * value' list
 type syntax = string list list * value list
+
+(* flatten CaseVs for easier pattern matching *)
 
 let flatten_case_v' (value : value) : string * string list list * value' list =
   match value.it with

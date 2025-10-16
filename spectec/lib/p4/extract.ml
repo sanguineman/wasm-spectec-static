@@ -6,7 +6,7 @@
  *)
 
 open Il.Ast
-open Concrete.Ast_utils
+open Il.Utils
 module F = Format
 
 (* Identifier extraction *)

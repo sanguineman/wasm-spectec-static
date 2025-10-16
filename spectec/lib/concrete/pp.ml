@@ -2,7 +2,7 @@ open Il.Ast
 open Il.Eq
 open Xl
 open Util.Source
-open Ast_utils
+open Il.Utils
 open Hint
 module Num = Num
 module F = Format
