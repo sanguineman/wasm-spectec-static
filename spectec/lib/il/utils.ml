@@ -80,9 +80,12 @@ let wrap_atom (s : string) : atom =
       SilentAtom s $ no_region
   | _ -> Atom s $ no_region
 
-(* no_region constructors *)
-let wrap_var_t (s : string) : typ' = VarT (s $ no_region, [])
-let wrap_iter_t (i : iter) (t : typ') : typ' = IterT (t $ no_region, i)
+(* Construct types with no region *)
+
+let var_t (s : string) : typ' = VarT (s $ no_region, [])
+let iter_t (i : iter) (t : typ') : typ' = IterT (t $ no_region, i)
+
+(* Construct values with no region *)
 
 let with_fresh_val (typ : typ') : vnote =
   let vid = Value.fresh () in
@@ -90,11 +93,33 @@ let with_fresh_val (typ : typ') : vnote =
 
 let with_typ (typ : typ') (v : value') : value = v $$$ with_fresh_val typ
 
-type symbol = NT of value | Term of string
+let opt_v_with_typ (typ : typ') (v : value option) : value =
+  OptV v |> with_typ (iter_t Opt typ)
+
+let opt_v_with_var_t (s : string) (v : value option) : value =
+  v |> opt_v_with_typ (var_t s)
+
+let list_v_with_typ (typ : typ') (vs : value list) : value =
+  ListV vs |> with_typ (iter_t List typ)
+
+let list_v_with_var_t (s : string) (vs : value list) : value =
+  let typ = var_t s in
+  vs |> list_v_with_typ typ
+
+let tuple_v (vs : value list) : value =
+  let typs = List.map (fun v -> v.note.typ $ no_region) vs in
+  TupleV vs |> with_typ (TupleT typs)
+
+let bool_v (b : bool) : value = BoolV b |> with_typ BoolT
+let text_v (s : string) : value = TextV s |> with_typ TextT
+let num_v_nat (i : Bigint.t) : value = NumV (`Nat i) |> with_typ (NumT `NatT)
+let num_v_int (i : Bigint.t) : value = NumV (`Int i) |> with_typ (NumT `IntT)
 
 (* convert a symbol list to a CaseV value *)
 
-let wrap_case_v (vs : symbol list) : value' =
+type symbol = NT of value | Term of string
+
+let case_v (vs : symbol list) : value' =
   let rec build_mixop acc_mixop acc_terms = function
     | [] ->
         (* Always add the final group, even if empty *)
@@ -115,14 +140,8 @@ let wrap_case_v (vs : symbol list) : value' =
   in
   CaseV (mixop, values)
 
-let wrap_opt_v (s : string) (v : value option) : value =
-  OptV v |> with_typ (wrap_iter_t Opt (wrap_var_t s))
-
-let wrap_list_v (s : string) (vs : value list) : value =
-  ListV vs |> with_typ (wrap_iter_t List (wrap_var_t s))
-
 let ( #@ ) (vs : symbol list) (s : string) : value =
-  vs |> wrap_case_v |> with_typ (wrap_var_t s)
+  vs |> case_v |> with_typ (var_t s)
 
 let id_of_case_v (v : value) : string =
   match (v.it, v.note.typ) with

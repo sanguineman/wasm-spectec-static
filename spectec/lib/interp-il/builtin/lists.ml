@@ -1,5 +1,6 @@
 open Xl
 open Il.Ast
+open Il.Utils
 module Value = Runtime_dynamic.Value
 open Util.Source
 
@@ -8,12 +9,7 @@ open Util.Source
 let rev_ (at : region) (targs : targ list) (values_input : value list) : value =
   let typ = Extract.one at targs in
   let values = Extract.one at values_input |> Value.get_list in
-  let value =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.IterT (typ, Il.Ast.List) in
-    ListV (List.rev values) $$$ { vid; typ }
-  in
-  value
+  List.rev values |> list_v_with_typ typ.it
 
 (* dec $concat_<X>((X* )* ) : X* *)
 
@@ -25,12 +21,7 @@ let concat_ (at : region) (targs : targ list) (values_input : value list) :
     |> Value.get_list
     |> List.concat_map Value.get_list
   in
-  let value =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.IterT (typ, Il.Ast.List) in
-    ListV values $$$ { vid; typ }
-  in
-  value
+  values |> list_v_with_typ typ.it
 
 (* dec $distinct_<K>(K* ) : bool *)
 
@@ -39,12 +30,7 @@ let distinct_ (at : region) (targs : targ list) (values_input : value list) :
   let _typ = Extract.one at targs in
   let values = Extract.one at values_input |> Value.get_list in
   let set = Sets.VSet.of_list values in
-  let value =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.BoolT in
-    BoolV (Sets.VSet.cardinal set = List.length values) $$$ { vid; typ }
-  in
-  value
+  Sets.VSet.cardinal set = List.length values |> bool_v
 
 (* dec $partition_<X>(X*, nat) : (X*, X* ) *)
 
@@ -59,25 +45,9 @@ let partition_ (at : region) (targs : targ list) (values_input : value list) :
     |> List.mapi (fun idx value -> (idx, value))
     |> List.partition (fun (idx, _) -> idx < len)
   in
-  let value_left =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.IterT (typ, Il.Ast.List) in
-    ListV (List.map snd values_left) $$$ { vid; typ }
-  in
-  let value_right =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.IterT (typ, Il.Ast.List) in
-    ListV (List.map snd values_right) $$$ { vid; typ }
-  in
-  let value =
-    let vid = Value.fresh () in
-    let typ =
-      Il.Ast.TupleT
-        [ value_left.note.typ $ no_region; value_right.note.typ $ no_region ]
-    in
-    TupleV [ value_left; value_right ] $$$ { vid; typ }
-  in
-  value
+  let value_left = List.map snd values_left |> list_v_with_typ typ.it in
+  let value_right = List.map snd values_right |> list_v_with_typ typ.it in
+  tuple_v [ value_left; value_right ]
 
 (* dec $assoc_<X, Y>(X, (X, Y)* ) : Y? *)
 
@@ -101,9 +71,4 @@ let assoc_ (at : region) (targs : targ list) (values_input : value list) : value
         | None -> None)
       None values
   in
-  let value =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.IterT (typ_value, Il.Ast.Opt) in
-    OptV value_opt $$$ { vid; typ }
-  in
-  value
+  value_opt |> opt_v_with_typ typ_value.it
