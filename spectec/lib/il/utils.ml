@@ -85,35 +85,6 @@ let wrap_atom (s : string) : atom =
 let var_t (s : string) : typ' = VarT (s $ no_region, [])
 let iter_t (i : iter) (t : typ') : typ' = IterT (t $ no_region, i)
 
-(* Construct values with no region *)
-
-let with_fresh_val (typ : typ') : vnote =
-  let vid = Value.fresh () in
-  { vid; typ }
-
-let with_typ (typ : typ') (v : value') : value = v $$$ with_fresh_val typ
-
-let opt_v_with_typ (typ : typ') (v : value option) : value =
-  OptV v |> with_typ (iter_t Opt typ)
-
-let opt_v_with_var_t (s : string) (v : value option) : value =
-  v |> opt_v_with_typ (var_t s)
-
-let list_v_with_typ (typ : typ') (vs : value list) : value =
-  ListV vs |> with_typ (iter_t List typ)
-
-let list_v_with_var_t (s : string) (vs : value list) : value =
-  let typ = var_t s in
-  vs |> list_v_with_typ typ
-
-let tuple_v (vs : value list) : value =
-  let typs = List.map (fun v -> v.note.typ $ no_region) vs in
-  TupleV vs |> with_typ (TupleT typs)
-
-let bool_v (b : bool) : value = BoolV b |> with_typ BoolT
-let text_v (s : string) : value = TextV s |> with_typ TextT
-let num_v_nat (i : Bigint.t) : value = NumV (`Nat i) |> with_typ (NumT `NatT)
-let num_v_int (i : Bigint.t) : value = NumV (`Int i) |> with_typ (NumT `IntT)
 
 (* convert a symbol list to a CaseV value *)
 
@@ -141,7 +112,7 @@ let case_v (vs : symbol list) : value' =
   CaseV (mixop, values)
 
 let ( #@ ) (vs : symbol list) (s : string) : value =
-  vs |> case_v |> with_typ (var_t s)
+  vs |> case_v |> Value.with_typ (var_t s)
 
 let id_of_case_v (v : value) : string =
   match (v.it, v.note.typ) with

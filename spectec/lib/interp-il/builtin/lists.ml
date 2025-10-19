@@ -1,7 +1,6 @@
 open Xl
 open Il.Ast
-open Il.Utils
-module Value = Runtime_dynamic.Value
+module Value = Il.Value
 open Util.Source
 
 (* dec $rev_<X>(X* ) : X* *)
@@ -9,7 +8,7 @@ open Util.Source
 let rev_ (at : region) (targs : targ list) (values_input : value list) : value =
   let typ = Extract.one at targs in
   let values = Extract.one at values_input |> Value.get_list in
-  List.rev values |> list_v_with_typ typ.it
+  List.rev values |> Value.list typ.it
 
 (* dec $concat_<X>((X* )* ) : X* *)
 
@@ -21,7 +20,7 @@ let concat_ (at : region) (targs : targ list) (values_input : value list) :
     |> Value.get_list
     |> List.concat_map Value.get_list
   in
-  values |> list_v_with_typ typ.it
+  values |> Value.list typ.it
 
 (* dec $distinct_<K>(K* ) : bool *)
 
@@ -30,7 +29,7 @@ let distinct_ (at : region) (targs : targ list) (values_input : value list) :
   let _typ = Extract.one at targs in
   let values = Extract.one at values_input |> Value.get_list in
   let set = Sets.VSet.of_list values in
-  Sets.VSet.cardinal set = List.length values |> bool_v
+  Sets.VSet.cardinal set = List.length values |> Value.bool
 
 (* dec $partition_<X>(X*, nat) : (X*, X* ) *)
 
@@ -45,9 +44,9 @@ let partition_ (at : region) (targs : targ list) (values_input : value list) :
     |> List.mapi (fun idx value -> (idx, value))
     |> List.partition (fun (idx, _) -> idx < len)
   in
-  let value_left = List.map snd values_left |> list_v_with_typ typ.it in
-  let value_right = List.map snd values_right |> list_v_with_typ typ.it in
-  tuple_v [ value_left; value_right ]
+  let value_left = List.map snd values_left |> Value.list typ.it in
+  let value_right = List.map snd values_right |> Value.list typ.it in
+  Value.tuple [ value_left; value_right ]
 
 (* dec $assoc_<X, Y>(X, (X, Y)* ) : Y? *)
 
@@ -71,4 +70,4 @@ let assoc_ (at : region) (targs : targ list) (values_input : value list) : value
         | None -> None)
       None values
   in
-  value_opt |> opt_v_with_typ typ_value.it
+  value_opt |> Value.opt typ_value.it

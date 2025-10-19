@@ -18,9 +18,9 @@ open Lexing
 open Context
 open Il.Ast
 open Il.Utils
-open Util.Source
 open Parser
 module F = Format
+module Value = Il.Value
 
 exception Error of string
 
@@ -103,7 +103,7 @@ let strip_prefix s =
 
 let parse_int n _info =
   let i = Bigint.of_string (sanitize n) in
-  NumV (`Int i) |> with_typ (NumT `IntT)
+  NumV (`Int i) |> Value.with_typ (NumT `IntT)
 
 let parse_width_int s n _info =
   let l_s = String.length s in
@@ -117,22 +117,22 @@ let parse_width_int s n _info =
       then raise (Error "signed integers must have width at least 2")
       else 
         let value_width =
-          NumV (`Nat w) |> with_typ (NumT `NatT)
+          NumV (`Nat w) |> Value.with_typ (NumT `NatT)
         in
         let value_int =
-          NumV (`Int i) |> with_typ (NumT `IntT)
+          NumV (`Int i) |> Value.with_typ (NumT `IntT)
         in
         [ NT value_width; Term "S"; NT value_int ]
-        |> case_v |> with_typ (var_t "number")
+        |> case_v |> Value.with_typ (var_t "number")
     | "w" ->
       let value_width =
-        NumV (`Nat w) |> with_typ (NumT `NatT)
+        NumV (`Nat w) |> Value.with_typ (NumT `NatT)
       in
       let value_int =
-        NumV (`Int i) |> with_typ (NumT `IntT)
+        NumV (`Int i) |> Value.with_typ (NumT `IntT)
       in
       [ NT value_width; Term "W"; NT value_int ]
-      |> case_v |> with_typ (var_t "number")
+      |> case_v |> Value.with_typ (var_t "number")
     | _ ->
       raise (Error "Illegal integer constant")
 }
@@ -161,9 +161,7 @@ rule tokenize = parse
       { let str, end_info = (string lexbuf) in
         debug_token ("\"" ^ str ^ "\"");
         end_info |> ignore;
-        let value = 
-          TextV str $$$ { vid = Il.Value.fresh (); typ = TextT }
-        in
+        let value = Il.Value.text str in
         STRING_LITERAL value
       }
   | whitespace
@@ -295,11 +293,7 @@ rule tokenize = parse
   | name
       { let text = Lexing.lexeme lexbuf in
         debug_token text;
-        let value =
-          let vid = Il.Value.fresh () in
-          let typ = Il.Ast.TextT in
-          TextV text $$$ { vid; typ }
-        in
+        let value = Il.Value.text text in
         NAME value }
   | "<="
       { debug_token "<="; LE (info lexbuf) }
@@ -408,11 +402,7 @@ rule tokenize = parse
   | _
       { let text = lexeme lexbuf in
         debug_token text;
-        let value =
-          let vid = Il.Value.fresh () in
-          let typ = Il.Ast.TextT in
-          TextV text $$$ { vid; typ }
-        in
+        let value = Il.Value.text text in
         UNEXPECTED_TOKEN value }
       
 and string = parse

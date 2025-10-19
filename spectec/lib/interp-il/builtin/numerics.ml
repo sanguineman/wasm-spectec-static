@@ -1,7 +1,6 @@
 open Xl
 open Il.Ast
-open Il.Utils
-module Value = Runtime_dynamic.Value
+module Value = Il.Value
 open Util.Source
 
 (* Conversion between meta-numerics and OCaml numerics *)
@@ -22,7 +21,7 @@ let shl (at : region) (targs : targ list) (values_input : value list) : value =
   let value_base, value_offset = Extract.two at values_input in
   let base = bigint_of_value value_base in
   let offset = bigint_of_value value_offset in
-  shl' base offset |> num_v_int
+  shl' base offset |> Value.int
 
 (* dec $shr(int, int) : int *)
 
@@ -37,7 +36,7 @@ let shr (at : region) (targs : targ list) (values_input : value list) : value =
   let value_base, value_offset = Extract.two at values_input in
   let base = bigint_of_value value_base in
   let offset = bigint_of_value value_offset in
-  shr' base offset |> num_v_int
+  shr' base offset |> Value.int
 
 (* dec $shr_arith(int, int, int) : int *)
 
@@ -57,7 +56,7 @@ let shr_arith (at : region) (targs : targ list) (values_input : value list) :
   let base = bigint_of_value value_base in
   let offset = bigint_of_value value_offset in
   let modulus = bigint_of_value value_modulus in
-  shr_arith' base offset modulus |> num_v_int
+  shr_arith' base offset modulus |> Value.int
 
 (* dec $pow2(nat) : int *)
 
@@ -67,7 +66,7 @@ let pow2 (at : region) (targs : targ list) (values_input : value list) : value =
   Extract.zero at targs;
   let value_width = Extract.one at values_input in
   let width = bigint_of_value value_width in
-  pow2' width |> num_v_int
+  pow2' width |> Value.int
 
 (* dec $to_int(int, bitstr) : int *)
 
@@ -84,7 +83,7 @@ let to_int (at : region) (targs : targ list) (values_input : value list) : value
   let value_width, value_bitstr = Extract.two at values_input in
   let width = bigint_of_value value_width in
   let bitstr = bigint_of_value value_bitstr in
-  to_int' width bitstr |> num_v_int
+  to_int' width bitstr |> Value.int
 
 (* dec $to_bitstr(int, int) : bitstr *)
 
@@ -100,7 +99,7 @@ let to_bitstr (at : region) (targs : targ list) (values_input : value list) :
   let value_width, value_int = Extract.two at values_input in
   let width = bigint_of_value value_width in
   let rawint = bigint_of_value value_int in
-  to_bitstr' width rawint |> num_v_int
+  to_bitstr' width rawint |> Value.int
 
 (* dec $bneg(int) : int *)
 
@@ -108,7 +107,7 @@ let bneg (at : region) (targs : targ list) (values_input : value list) : value =
   Extract.zero at targs;
   let value = Extract.one at values_input in
   let rawint = bigint_of_value value in
-  Bigint.bit_not rawint |> num_v_int
+  Bigint.bit_not rawint |> Value.int
 
 (* dec $band(int, int) : int *)
 
@@ -117,7 +116,7 @@ let band (at : region) (targs : targ list) (values_input : value list) : value =
   let value_l, value_r = Extract.two at values_input in
   let rawint_l = bigint_of_value value_l in
   let rawint_r = bigint_of_value value_r in
-  Bigint.bit_and rawint_l rawint_r |> num_v_int
+  Bigint.bit_and rawint_l rawint_r |> Value.int
 
 (* dec $bxor(int, int) : int *)
 
@@ -126,7 +125,7 @@ let bxor (at : region) (targs : targ list) (values_input : value list) : value =
   let value_l, value_r = Extract.two at values_input in
   let rawint_l = bigint_of_value value_l in
   let rawint_r = bigint_of_value value_r in
-  Bigint.bit_xor rawint_l rawint_r |> num_v_int
+  Bigint.bit_xor rawint_l rawint_r |> Value.int
 
 (* dec $bor(int, int) : int *)
 
@@ -135,7 +134,7 @@ let bor (at : region) (targs : targ list) (values_input : value list) : value =
   let value_l, value_r = Extract.two at values_input in
   let rawint_l = bigint_of_value value_l in
   let rawint_r = bigint_of_value value_r in
-  Bigint.bit_or rawint_l rawint_r |> num_v_int
+  Bigint.bit_or rawint_l rawint_r |> Value.int
 
 (* dec $bitacc(int, int, int) : int *)
 
@@ -154,4 +153,4 @@ let bitacc (at : region) (targs : targ list) (values_input : value list) : value
   let rawint_b = bigint_of_value value_b in
   let rawint_h = bigint_of_value value_h in
   let rawint_l = bigint_of_value value_l in
-  bitacc' rawint_b rawint_h rawint_l |> num_v_int
+  bitacc' rawint_b rawint_h rawint_l |> Value.int

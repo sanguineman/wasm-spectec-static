@@ -31,13 +31,13 @@ type iter =
   | Opt       (* `?` *)
   | List      (* `*` *)
 
-(* Variables *)
+(* Hints *)
 
-type var = id * typ * iter list
+type hint = { hintid : id; hintexp : El.Ast.exp }
 
 (* Types *)
 
-and typ = typ' phrase
+type typ = typ' phrase
 and typ' =
   | BoolT                   (* `bool` *)
   | NumT of Num.typ         (* numtyp *)
@@ -47,7 +47,16 @@ and typ' =
   | IterT of typ * iter     (* typ iter *)
   | FuncT                   (* `func` *)
 
-and nottyp = nottyp' phrase
+(* Type arguments *)
+
+and targ = targ' phrase
+and targ' = typ'
+
+(* Variables *)
+
+type var = id * typ * iter list
+
+type nottyp = nottyp' phrase
 and nottyp' = mixop * typ list
 
 and deftyp = deftyp' phrase
@@ -61,7 +70,7 @@ and typcase = nottyp * hint list
 
 (* Values *)
 
-and vid = int
+type vid = int
 and vnote = { vid : vid; typ : typ' }
 
 and value = (value', vnote) note
@@ -81,7 +90,7 @@ and valuecase = mixop * value list
 
 (* Operators *)
 
-and numop = [ `DecOp | `HexOp ]
+type numop = [ `DecOp | `HexOp ]
 and unop = [ Bool.unop | Num.unop ]
 and binop = [ Bool.binop | Num.binop ]
 and cmpop = [ Bool.cmpop | Num.cmpop ]
@@ -159,11 +168,6 @@ and arg' =
   | ExpA of exp   (* exp *)
   | DefA of id    (* `$`id *)
 
-(* Type arguments *)
-
-and targ = targ' phrase
-and targ' = typ'
-
 (* Rules *)
 
 and rule = rule' phrase
@@ -184,10 +188,6 @@ and prem' =
   | LetPr of exp * exp             (* `let` exp `=` exp *)
   | IterPr of prem * iterexp       (* prem iterexp *)
   | DebugPr of exp                 (* `debug` exp *)
-
-(* Hints *)
-
-and hint = { hintid : id; hintexp : El.Ast.exp }
 
 (* Definitions *)
 

@@ -3,7 +3,7 @@ open Xl
 open Il.Ast
 module Hint = Runtime_static.Rel.Hint
 module Typ = Runtime_dynamic.Typ
-module Value = Runtime_dynamic.Value
+module Value = Il.Value
 module Cache = Runtime_dynamic.Cache
 module Rel = Runtime_dynamic_il.Rel
 open Runtime_dynamic_il.Envs

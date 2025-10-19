@@ -1,6 +1,6 @@
 open Xl
 open Il.Ast
-module Value = Runtime_dynamic.Value
+module Value = Il.Value
 open Error
 open Util.Source
 
