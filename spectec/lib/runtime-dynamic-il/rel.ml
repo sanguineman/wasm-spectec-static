@@ -1,5 +1,4 @@
 open Il.Ast
-open Il.Print
 
 (* Relation *)
 
@@ -9,4 +8,4 @@ let to_string (inputs, rules) =
   "rel "
   ^ Runtime_static.Rel.Hint.to_string inputs
   ^ "\n"
-  ^ String.concat "\n   " (List.map string_of_rule rules)
+  ^ String.concat "\n   " (List.map Print.string_of_rule rules)

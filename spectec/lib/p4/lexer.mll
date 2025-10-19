@@ -17,10 +17,10 @@
 open Lexing
 open Context
 open Il.Ast
-open Il.Utils
+open Il.Core.Utils
 open Parser
 module F = Format
-module Value = Il.Value
+module Value = Il.Ast.Value
 
 exception Error of string
 
@@ -161,7 +161,7 @@ rule tokenize = parse
       { let str, end_info = (string lexbuf) in
         debug_token ("\"" ^ str ^ "\"");
         end_info |> ignore;
-        let value = Il.Value.text str in
+        let value = Il.Ast.Value.text str in
         STRING_LITERAL value
       }
   | whitespace
@@ -293,7 +293,7 @@ rule tokenize = parse
   | name
       { let text = Lexing.lexeme lexbuf in
         debug_token text;
-        let value = Il.Value.text text in
+        let value = Value.text text in
         NAME value }
   | "<="
       { debug_token "<="; LE (info lexbuf) }
@@ -402,7 +402,7 @@ rule tokenize = parse
   | _
       { let text = lexeme lexbuf in
         debug_token text;
-        let value = Il.Value.text text in
+        let value = Value.text text in
         UNEXPECTED_TOKEN value }
       
 and string = parse
@@ -500,7 +500,7 @@ let rec lexer (lexbuf:lexbuf): token =
         lexer_state := SRegular;
         lexer lexbuf
       | NAME value as token ->
-        let text = Il.Value.get_text value in
+        let text = Value.get_text value in
         lexer_state := SIdent (text, SRegular);
         token          
       | token -> 
@@ -510,7 +510,7 @@ let rec lexer (lexbuf:lexbuf): token =
     | SRegular ->
       begin match tokenize lexbuf with
       | NAME value as token ->
-        let text = Il.Value.get_text value in
+        let text = Value.get_text value in
         lexer_state := SIdent (text, SRegular);
         token
       | PRAGMA _ as token ->
@@ -529,7 +529,7 @@ let rec lexer (lexbuf:lexbuf): token =
       begin match tokenize lexbuf with
       | L_ANGLE info -> L_ANGLE_ARGS info
       | NAME value as token ->
-        let text = Il.Value.get_text value in
+        let text = Value.get_text value in
         lexer_state := SIdent (text, SRegular);
         token
       | PRAGMA _ as token ->
@@ -549,7 +549,7 @@ let rec lexer (lexbuf:lexbuf): token =
          lexer_state := SRegular;
          token
       | NAME value as token ->
-         let text = Il.Value.get_text value in
+         let text = Value.get_text value in
          lexer_state := SIdent(text, SPragma);
          token
       | token -> token

@@ -1,6 +1,5 @@
 open Xl
 open Il.Ast
-open Il.Print
 
 (* Ticker for node identifier tracking *)
 
@@ -18,7 +17,7 @@ type t = value
 
 (* Stringifier *)
 
-let to_string t = string_of_value t
+let to_string t = Print.string_of_value t
 
 (* Comparison *)
 

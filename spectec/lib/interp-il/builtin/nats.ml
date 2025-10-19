@@ -1,6 +1,5 @@
 open Xl
 open Il.Ast
-module Value = Il.Value
 open Util.Source
 
 (* Conversion between meta-numerics and OCaml numerics *)

@@ -1,6 +1,5 @@
 open Domain.Lib
 open Il.Ast
-open Il.Print
 open Util.Error
 open Util.Source
 
@@ -8,7 +7,7 @@ open Util.Source
 
 type t = typ
 
-let to_string t = string_of_typ t
+let to_string t = Print.string_of_typ t
 
 (* Constructor *)
 

@@ -88,7 +88,7 @@ let elab specdir =
 
 let elab_test specdir =
   let spec_il = elab specdir in
-  Il.Print.string_of_spec spec_il |> print_endline
+  Il.Ast.Print.string_of_spec spec_il |> print_endline
 
 let elab_command =
   Core.Command.basic ~summary:"run elaboration test"

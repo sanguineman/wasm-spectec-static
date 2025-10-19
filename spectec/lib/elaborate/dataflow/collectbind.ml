@@ -111,7 +111,7 @@ let rec collect_exp (dctx : Dctx.t) (exp : exp) : Bind.BEnv.t =
         (Format.asprintf
            "iterated expression should initially have no annotations, but got \
             %s"
-           (Il.Print.string_of_iterexp iterexp))
+           (Il.Ast.Print.string_of_iterexp iterexp))
   | IterE (exp, (iter, [])) ->
       let binds = collect_exp dctx exp in
       let binds = Bind.BEnv.map (Bind.Occ.add_iter iter) binds in

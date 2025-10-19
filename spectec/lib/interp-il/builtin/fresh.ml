@@ -1,5 +1,4 @@
 open Il.Ast
-module Value = Il.Value
 open Util.Source
 
 let ctr = ref 0

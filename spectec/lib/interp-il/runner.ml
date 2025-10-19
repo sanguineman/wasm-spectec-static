@@ -1,5 +1,5 @@
 open Il.Ast
-module Value = Il.Value
+module Value = Il.Ast.Value
 module Cache = Runtime_dynamic.Cache
 module F = Format
 open Attempt

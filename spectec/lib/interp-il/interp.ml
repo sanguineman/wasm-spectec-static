@@ -3,7 +3,6 @@ open Xl
 open Il.Ast
 module Hint = Runtime_static.Rel.Hint
 module Typ = Runtime_dynamic.Typ
-module Value = Il.Value
 module Cache = Runtime_dynamic.Cache
 module Rel = Runtime_dynamic_il.Rel
 open Runtime_dynamic_il.Envs
@@ -11,7 +10,6 @@ open Error
 open Attempt
 module F = Format
 open Util.Source
-module Pp = Il.Print
 
 (* Cache *)
 
@@ -102,8 +100,8 @@ let rec assign_exp (ctx : Ctx.t) (exp : exp) (value : value) : Ctx.t =
   | _ ->
       error exp.at
         (F.asprintf "(TODO) match failed %s <- %s"
-           (Il.Print.string_of_exp exp)
-           (Il.Print.string_of_value ~short:true value))
+           (Print.string_of_exp exp)
+           (Print.string_of_value ~short:true value))
 
 and assign_exps (ctx : Ctx.t) (exps : exp list) (values : value list) : Ctx.t =
   check
@@ -146,7 +144,7 @@ and assign_arg_def (ctx_caller : Ctx.t) (ctx_callee : Ctx.t) (id : id)
   | _ ->
       error id.at
         (F.asprintf "cannot assign a value %s to a definition %s"
-           (Il.Print.string_of_value ~short:true value)
+           (Print.string_of_value ~short:true value)
            id.it)
 
 (* Expression evaluation *)
@@ -740,7 +738,7 @@ and eval_iter_exp_opt (note : typ') (ctx : Ctx.t) (exp : exp) (vars : var list)
   let+ ctx_sub_opt = Ctx.sub_opt ctx vars in
   match ctx_sub_opt with
   | Some ctx_sub ->
-      let ctx_sub = Ctx.trace_open_iter ctx_sub (Il.Print.string_of_exp exp) in
+      let ctx_sub = Ctx.trace_open_iter ctx_sub (Print.string_of_exp exp) in
       let ctx_sub, value = eval_exp ctx_sub exp in
       let ctx_sub = Ctx.trace_close ctx_sub in
       let ctx = Ctx.trace_commit ctx ctx_sub.trace in
@@ -765,7 +763,7 @@ and eval_iter_exp_list (note : typ') (ctx : Ctx.t) (exp : exp) (vars : var list)
     List.fold_left
       (fun (ctx, values) ctx_sub ->
         let ctx_sub =
-          Ctx.trace_open_iter ctx_sub (Il.Print.string_of_exp exp)
+          Ctx.trace_open_iter ctx_sub (Print.string_of_exp exp)
         in
         let ctx_sub, value = eval_exp ctx_sub exp in
         let ctx_sub = Ctx.trace_close ctx_sub in
@@ -851,7 +849,7 @@ and eval_if_prem (ctx : Ctx.t) (exp_cond : exp) : Ctx.t attempt =
   if cond then Ok ctx
   else
     fail exp_cond.at
-      (F.asprintf "condition %s was not met" (Il.Print.string_of_exp exp_cond))
+      (F.asprintf "condition %s was not met" (Print.string_of_exp exp_cond))
 
 (* Let premise evaluation *)
 
@@ -890,7 +888,7 @@ and eval_iter_prem_list (ctx : Ctx.t) (prem : prem) (vars : var list) :
             (fun ctx_values_binding_batch ctx_sub ->
               let* ctx, values_binding_batch = ctx_values_binding_batch in
               let ctx_sub =
-                Ctx.trace_open_iter ctx_sub (Il.Print.string_of_prem prem)
+                Ctx.trace_open_iter ctx_sub (Print.string_of_prem prem)
               in
               let* ctx_sub = eval_prem ctx_sub prem in
               let ctx_sub = Ctx.trace_close ctx_sub in
@@ -939,8 +937,8 @@ and eval_iter_prem (ctx : Ctx.t) (prem : prem) (iterexp : iterexp) :
 and eval_debug_prem (ctx : Ctx.t) (exp : exp) : Ctx.t attempt =
   let ctx, value = eval_exp ctx exp in
   print_endline
-  @@ F.sprintf "%s: %s" (string_of_region exp.at) (Pp.string_of_exp exp);
-  print_endline @@ Pp.string_of_value value;
+  @@ F.sprintf "%s: %s" (string_of_region exp.at) (Print.string_of_exp exp);
+  print_endline @@ Print.string_of_value value;
   Ok ctx
 
 (* Invoke a relation *)
@@ -1034,9 +1032,9 @@ and invoke_func (ctx : Ctx.t) (id : id) (targs : targ list) (args : arg list) :
   invoke_func' ctx id targs args
   |> nest id.at
        (F.asprintf "invocation of function %s%s%s failed"
-          (Il.Print.string_of_defid id)
-          (Il.Print.string_of_targs targs)
-          (Il.Print.string_of_args args))
+          (Print.string_of_defid id)
+          (Print.string_of_targs targs)
+          (Print.string_of_args args))
 
 and invoke_func' (ctx : Ctx.t) (id : id) (targs : targ list) (args : arg list) :
     (Ctx.t * value) attempt =
@@ -1127,7 +1125,7 @@ and invoke_func_def (ctx : Ctx.t) (id : id) (targs : targ list)
             attempt_clause' ctx_local prems exp_output
             |> nest id.at
                  (F.asprintf "application of clause %s%s failed" id.it
-                    (Il.Print.string_of_args args_input))
+                    (Print.string_of_args args_input))
           in
           attempt_clause)
         clauses

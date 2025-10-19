@@ -1,5 +1,5 @@
 open Domain.Lib
-open Ast
+open Types
 open Util.Source
 
 (* Identifier set *)

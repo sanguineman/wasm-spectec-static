@@ -6,7 +6,8 @@
  *)
 
 open Il.Ast
-open Il.Utils
+open Il.Core.Utils
+module Print_debug = Il.Core.Print_debug
 module F = Format
 
 (* Identifier extraction *)
@@ -26,7 +27,7 @@ let id_of_name (value : value) : string =
   | _ ->
       failwith
         (Printf.sprintf "Invalid name structure %s: %s "
-           (Il.Print.string_of_value value)
+           (Print.string_of_value value)
            (id_of_case_v value))
 
 let id_of_function_prototype (v : value) : string =
@@ -36,7 +37,7 @@ let id_of_function_prototype (v : value) : string =
   | _ ->
       failwith
         (Printf.sprintf "Invalid functionPrototype: %s"
-           (Il.Print_debug.string_of_value v))
+           (Print_debug.string_of_value v))
 
 let id_of_declaration (decl : value) : string =
   match flatten_case_v decl with
@@ -142,7 +143,7 @@ let has_type_params_function_prototype (v : value) : bool =
   | _ ->
       failwith
         (Printf.sprintf "Invalid functionPrototype: %s"
-           (Il.Print_debug.string_of_value v))
+           (Print_debug.string_of_value v))
 
 let has_type_params_declaration (decl : value) : bool =
   match flatten_case_v decl with

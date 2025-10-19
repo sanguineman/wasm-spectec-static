@@ -11,5 +11,5 @@ let to_string (tparams, params, plaintyp, clauses) =
   ^ " =\n"
   ^ String.concat "\n"
       (List.mapi
-         (fun idx clause -> Il.Print.string_of_clause idx clause)
+         (fun idx clause -> Il.Ast.Print.string_of_clause idx clause)
          clauses)

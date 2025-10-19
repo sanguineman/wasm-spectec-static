@@ -39,4 +39,4 @@ type t = El.Ast.nottyp * Hint.t * Il.Ast.rule list
 let to_string (nottyp, inputs, rules) =
   El.Print.string_of_nottyp nottyp
   ^ " " ^ Hint.to_string inputs ^ " =\n"
-  ^ String.concat "\n   " (List.map Il.Print.string_of_rule rules)
+  ^ String.concat "\n   " (List.map Il.Ast.Print.string_of_rule rules)

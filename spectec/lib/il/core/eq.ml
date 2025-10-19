@@ -1,5 +1,5 @@
 open Xl
-open Ast
+open Types
 
 (* Identifiers *)
 

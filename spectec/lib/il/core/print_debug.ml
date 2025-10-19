@@ -1,5 +1,5 @@
 open Xl
-open Ast
+open Types
 open Util.Print
 open Util.Source
 
@@ -21,15 +21,14 @@ let string_of_defid defid = "$" ^ defid.it
 
 (* Atoms *)
 
-let string_of_atom atom =
-  match atom.it with
-  | Atom.SilentAtom _ -> ""
-  | _ -> Atom.string_of_atom atom.it |> String.lowercase_ascii
+let string_of_atom atom = Atom.string_of_atom atom.it
 
 let string_of_atoms atoms =
   match atoms with
   | [] -> ""
-  | _ -> atoms |> List.map string_of_atom |> String.concat ""
+  | _ ->
+      Format.asprintf "`%s`"
+        (atoms |> List.map string_of_atom |> String.concat "")
 
 (* Mixfix operators *)
 
@@ -81,8 +80,8 @@ and string_of_typfields sep typfields =
   String.concat sep (List.map string_of_typfield typfields)
 
 and string_of_typcase typcase =
-  let nottyp, hints = typcase in
-  string_of_nottyp nottyp ^ string_of_hints hints
+  let nottyp, _hints = typcase in
+  string_of_nottyp nottyp
 
 and string_of_typcases sep typcases =
   String.concat sep (List.map string_of_typcase typcases)
@@ -92,23 +91,22 @@ and string_of_typcases sep typcases =
 and string_of_value ?(short = false) ?(level = 0) value =
   match value.it with
   | BoolV b -> string_of_bool b
-  | NumV n -> string_of_num n
-  | TextV s -> String.escaped s
+  | NumV n -> Num.string_of_num n
+  | TextV s -> Printf.sprintf {|"%s"|} s
   | StructV [] -> "{}"
   | StructV valuefields when short ->
       Format.asprintf "{ .../%d }" (List.length valuefields)
   | StructV valuefields ->
-      Format.sprintf "{\n%s\n%s}"
+      Format.asprintf "{ %s }"
         (String.concat ";\n"
-           (List.map
-              (fun (atom, value) ->
-                let indent = indent (level + 1) in
+           (List.mapi
+              (fun idx (atom, value) ->
+                let indent = if idx = 0 then "" else indent (level + 1) in
                 Format.asprintf "%s%s %s" indent (string_of_atom atom)
-                  (string_of_value ~short ~level:(level + 1) value))
+                  (string_of_value ~short ~level:(level + 2) value))
               valuefields))
-        (indent level)
   | CaseV (mixop, _) when short -> string_of_mixop mixop
-  | CaseV (mixop, values) -> string_of_notval ~level (mixop, values)
+  | CaseV (mixop, values) -> "(" ^ string_of_notval (mixop, values) ^ ")"
   | TupleV values ->
       Format.asprintf "(%s)"
         (String.concat ", "
@@ -120,22 +118,21 @@ and string_of_value ?(short = false) ?(level = 0) value =
   | ListV [] -> "[]"
   | ListV values when short -> Format.asprintf "[ .../%d ]" (List.length values)
   | ListV values ->
-      Format.asprintf "[\n%s\n%s]"
+      Format.asprintf "[ %s ]"
         (String.concat ",\n"
-           (List.map
-              (fun value ->
-                let indent = indent (level + 1) in
-                indent ^ string_of_value ~short ~level:(level + 1) value)
+           (List.mapi
+              (fun idx value ->
+                let indent = if idx = 0 then "" else indent (level + 1) in
+                indent ^ string_of_value ~short ~level:(level + 2) value)
               values))
-        (indent level)
   | FuncV id -> string_of_defid id
 
-and string_of_notval ?(level = 0) notval =
+and string_of_notval notval =
   let mixop, values = notval in
   let len = List.length mixop + List.length values in
   List.init len (fun idx ->
       if idx mod 2 = 0 then idx / 2 |> List.nth mixop |> string_of_atoms
-      else idx / 2 |> List.nth values |> string_of_value ~level)
+      else idx / 2 |> List.nth values |> string_of_value)
   |> List.filter_map (fun str -> if str = "" then None else Some str)
   |> String.concat " "
 

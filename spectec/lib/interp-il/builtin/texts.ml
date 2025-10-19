@@ -1,6 +1,5 @@
 open Xl
 open Il.Ast
-module Value = Il.Value
 open Util.Source
 
 (* dec $int_to_text(int) : text *)

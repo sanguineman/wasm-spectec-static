@@ -1,7 +1,7 @@
 %{
   open Il.Ast
   open Context
-  open Il.Utils
+  open Il.Core.Utils
   open Extract
 
   let declare_var_of_il (v: value) (b: bool) : unit =

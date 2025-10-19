@@ -1,4 +1,4 @@
-open Ast
+open Types
 open Util.Source
 
 type t = value

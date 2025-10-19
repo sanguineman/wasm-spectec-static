@@ -1,6 +1,5 @@
 open Xl
 open Il.Ast
-module Value = Il.Value
 open Util.Source
 
 (* dec $rev_<X>(X* ) : X* *)
