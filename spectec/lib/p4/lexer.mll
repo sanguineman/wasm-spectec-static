@@ -103,7 +103,7 @@ let strip_prefix s =
 
 let parse_int n _info =
   let i = Bigint.of_string (sanitize n) in
-  NumV (`Int i) |> Value.with_typ (NumT `IntT)
+  NumV (`Int i) |> Value.make_val (NumT `IntT)
 
 let parse_width_int s n _info =
   let l_s = String.length s in
@@ -117,22 +117,22 @@ let parse_width_int s n _info =
       then raise (Error "signed integers must have width at least 2")
       else 
         let value_width =
-          NumV (`Nat w) |> Value.with_typ (NumT `NatT)
+          NumV (`Nat w) |> Value.make_val (NumT `NatT)
         in
         let value_int =
-          NumV (`Int i) |> Value.with_typ (NumT `IntT)
+          NumV (`Int i) |> Value.make_val (NumT `IntT)
         in
         [ NT value_width; Term "S"; NT value_int ]
-        |> case_v |> Value.with_typ (var_t "number")
+        |> case_v |> Value.make_val (var_t "number")
     | "w" ->
       let value_width =
-        NumV (`Nat w) |> Value.with_typ (NumT `NatT)
+        NumV (`Nat w) |> Value.make_val (NumT `NatT)
       in
       let value_int =
-        NumV (`Int i) |> Value.with_typ (NumT `IntT)
+        NumV (`Int i) |> Value.make_val (NumT `IntT)
       in
       [ NT value_width; Term "W"; NT value_int ]
-      |> case_v |> Value.with_typ (var_t "number")
+      |> case_v |> Value.make_val (var_t "number")
     | _ ->
       raise (Error "Illegal integer constant")
 }

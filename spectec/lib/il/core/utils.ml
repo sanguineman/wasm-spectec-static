@@ -85,7 +85,6 @@ let wrap_atom (s : string) : atom =
 let var_t (s : string) : typ' = VarT (s $ no_region, [])
 let iter_t (i : iter) (t : typ') : typ' = IterT (t $ no_region, i)
 
-
 (* convert a symbol list to a CaseV value *)
 
 type symbol = NT of value | Term of string
@@ -112,7 +111,7 @@ let case_v (vs : symbol list) : value' =
   CaseV (mixop, values)
 
 let ( #@ ) (vs : symbol list) (s : string) : value =
-  vs |> case_v |> Value.with_typ (var_t s)
+  vs |> case_v |> Value.make_val (var_t s)
 
 let id_of_case_v (v : value) : string =
   match (v.it, v.note.typ) with

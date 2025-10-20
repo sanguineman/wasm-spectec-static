@@ -209,7 +209,8 @@ let rec log ?(tagger = Tagger.empty) ?(depth = 0) ?(idx = 0) ?(verbose = false)
         (logs ~tagger ~depth ~verbose subtraces)
         (tag tagger depth) log_time time
   | Prem prem ->
-      Format.asprintf "[%s-%d] %s" (tag tagger depth) idx (Print.string_of_prem prem)
+      Format.asprintf "[%s-%d] %s" (tag tagger depth) idx
+        (Print.string_of_prem prem)
   | Empty -> ""
 
 and logs ?(tagger = Tagger.empty) ?(depth = 0) ?(verbose = false)

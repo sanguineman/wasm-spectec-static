@@ -50,7 +50,8 @@ let rec populate_exp_template (uenv : UEnv.t) (exp_template : exp) (exp : exp) :
           (Il.Ast.Print.string_of_exp exp)
         |> failwith
   in
-  if Il.Ast.Eq.eq_exp exp_template exp then [] else populate_exp_template_unequal ()
+  if Il.Ast.Eq.eq_exp exp_template exp then []
+  else populate_exp_template_unequal ()
 
 and populate_exps_templates (uenv : UEnv.t) (exps_template : exp list)
     (exps : exp list) : prem list =

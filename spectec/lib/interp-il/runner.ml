@@ -1,5 +1,4 @@
 open Il.Ast
-module Value = Il.Ast.Value
 module Cache = Runtime_dynamic.Cache
 module F = Format
 open Attempt
@@ -16,7 +15,6 @@ let run_relation (ctx : Ctx.t) (spec : spec) (rid : id') (values : value list) :
 let init ?(debug : bool = false) ?(profile : bool = false)
     (filename_target : string) : Ctx.t =
   Builtin.init ();
-  Value.refresh ();
   Cache.Cache.clear !Interp.func_cache;
   Cache.Cache.clear !Interp.rule_cache;
   Ctx.empty ~debug ~profile filename_target

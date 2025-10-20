@@ -1183,7 +1183,8 @@ and eval_return_instr (ctx : Ctx.t) (exp : exp) : Ctx.t * Sign.t =
 and eval_debug_instr (ctx : Ctx.t) (exp : exp) : Ctx.t * Sign.t =
   let ctx, value = eval_exp ctx exp in
   print_endline
-  @@ F.sprintf "%s: %s" (string_of_region exp.at) (Il.Ast.Print.string_of_exp exp);
+  @@ F.sprintf "%s: %s" (string_of_region exp.at)
+       (Il.Ast.Print.string_of_exp exp);
   print_endline @@ Il.Ast.Print.string_of_value value;
   (ctx, Cont)
 

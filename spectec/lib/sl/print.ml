@@ -46,7 +46,9 @@ let string_of_typfields sep typfields =
   Il.Ast.Print.string_of_typfields sep typfields
 
 let string_of_typcase typcase = Il.Ast.Print.string_of_typcase typcase
-let string_of_typcases sep typcases = Il.Ast.Print.string_of_typcases sep typcases
+
+let string_of_typcases sep typcases =
+  Il.Ast.Print.string_of_typcases sep typcases
 
 (* Values *)
 

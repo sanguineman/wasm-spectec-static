@@ -7,7 +7,8 @@ let eq_id (id_a : id) (id_b : id) : bool = Il.Ast.Eq.eq_id id_a id_b
 
 (* Atoms *)
 
-let eq_atom (atom_a : atom) (atom_b : atom) : bool = Il.Ast.Eq.eq_atom atom_a atom_b
+let eq_atom (atom_a : atom) (atom_b : atom) : bool =
+  Il.Ast.Eq.eq_atom atom_a atom_b
 
 let eq_atoms (atoms_a : atom list) (atoms_b : atom list) : bool =
   Il.Ast.Eq.eq_atoms atoms_a atoms_b
@@ -19,7 +20,8 @@ let eq_mixop (mixop_a : mixop) (mixop_b : mixop) : bool =
 
 (* Iterators *)
 
-let eq_iter (iter_a : iter) (iter_b : iter) : bool = Il.Ast.Eq.eq_iter iter_a iter_b
+let eq_iter (iter_a : iter) (iter_b : iter) : bool =
+  Il.Ast.Eq.eq_iter iter_a iter_b
 
 let eq_iters (iters_a : iter list) (iters_b : iter list) : bool =
   Il.Ast.Eq.eq_iters iters_a iters_b
@@ -58,7 +60,8 @@ let eq_pattern (pattern_a : pattern) (pattern_b : pattern) : bool =
 
 (* Paths *)
 
-let eq_path (path_a : path) (path_b : path) : bool = Il.Ast.Eq.eq_path path_a path_b
+let eq_path (path_a : path) (path_b : path) : bool =
+  Il.Ast.Eq.eq_path path_a path_b
 
 (* Arguments *)
 
@@ -69,7 +72,8 @@ let eq_args (args_a : arg list) (args_b : arg list) : bool =
 
 (* Type arguments *)
 
-let eq_targ (targ_a : targ) (targ_b : targ) : bool = Il.Ast.Eq.eq_targ targ_a targ_b
+let eq_targ (targ_a : targ) (targ_b : targ) : bool =
+  Il.Ast.Eq.eq_targ targ_a targ_b
 
 let eq_targs (targs_a : targ list) (targs_b : targ list) : bool =
   Il.Ast.Eq.eq_targs targs_a targs_b

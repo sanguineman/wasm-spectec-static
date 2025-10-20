@@ -8,7 +8,7 @@ let int_to_text (at : region) (targs : targ list) (values_input : value list) :
     value =
   Extract.zero at targs;
   let num = Extract.one at values_input |> Value.get_num in
-  TextV (Num.string_of_num num) |> Value.with_typ Il.Ast.TextT
+  Num.string_of_num num |> Value.text
 
 (* dec $strip_prefix(text, text) : text *)
 
