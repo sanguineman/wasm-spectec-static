@@ -45,6 +45,11 @@ let stop start = Unix.gettimeofday () -. start
 
 (* File collector *)
 
+(* (* helper: string suffix *) *)
+(* let ends_with ~suffix (s : string) : bool = *)
+(*   let ls = String.length s and lsf = String.length suffix in *)
+(*   lsf <= ls && String.sub s (ls - lsf) lsf = suffix *)
+
 let rec collect_files ~(suffix : string) dir =
   let files = Sys_unix.readdir dir in
   Array.sort String.compare files;
@@ -63,7 +68,7 @@ let collect_exclude filename_exclude =
   let ic = open_in filename_exclude in
   let rec parse_lines excludes =
     try
-      let exclude = "../../../../" ^ input_line ic in
+      let exclude = "../../../../../0_p4-spectec/" ^ input_line ic in
       let excludes = exclude :: excludes in
       parse_lines excludes
     with End_of_file -> excludes
@@ -81,10 +86,18 @@ let collect_excludes (paths_exclude : string list) =
 (* Spec Elaboration test *)
 
 let elab specdir =
-  specdir
-  |> collect_files ~suffix:".watsup"
-  |> List.concat_map Frontend.Parse.parse_file
-  |> Elaborate.Elab.elab_spec
+  let parsed =
+    specdir
+    |> collect_files ~suffix:".spectec"
+    |> List.concat_map Frontend.Parse.parse_file
+  in
+  match Elaborate.Elab.elab_spec parsed with
+  | Elaborate.Elab.Spec spec_il -> spec_il
+  | Elaborate.Elab.Errors errors -> (
+      (* propagate the first elaboration error so callers can handle it *)
+      match errors with
+      | (at, failtraces) :: _ -> raise (ElabError (at, failtraces))
+      | [] -> failwith "elab_spec returned Errors []")
 
 let elab_test specdir =
   let spec_il = elab specdir in
@@ -96,28 +109,31 @@ let elab_command =
      let open Core.Command.Param in
      let%map specdir = flag "-s" (required string) ~doc:"p4 spec directory" in
      fun () ->
-       try elab_test specdir
-       with ParseError (at, msg) | ElabError (at, msg) ->
-         Format.printf "Error on elaboration: %s\n" (string_of_error at msg))
+       try elab_test specdir with
+       | ParseError (at, msg) ->
+           Format.printf "Error on elaboration: %s\n" (string_of_error at msg)
+       | ElabError (at, failtraces) ->
+           Format.printf "Error on elaboration: %s\n"
+             (string_of_elab_errors [ (at, failtraces) ]))
 
 (* P4 Parser test *)
 
 let parse_file time_start includes filename =
-  try Parsing.Parse.parse_file includes filename
+  try P4.Parse.parse_file includes filename
   with ParseError (at, msg) -> raise (TestParseFileErr (msg, at, time_start))
 
 let parse_string time_start filename program_dump =
-  try Parsing.Parse.parse_string filename program_dump
+  try P4.Parse.parse_string filename program_dump
   with ParseError (at, msg) ->
     raise (TestParseStringErr (msg, at, time_start))
 
 let parse_roundtrip time_start includes filename spec =
   let program = parse_file time_start includes filename in
   let program_dump =
-    Format.asprintf "%a\n" (Parsing.Pp.pp_program spec) program
+    Format.asprintf "%a\n" (Concrete.Pp.pp_program spec) program
   in
   let program_roundtrip = parse_string time_start filename program_dump in
-  if not (Il.Eq.eq_value ~dbg:true program program_roundtrip) then
+  if not (Il.Ast.Eq.eq_value ~dbg:true program program_roundtrip) then
     raise (TestParseRoundtripErr time_start)
   else time_start
 
@@ -235,15 +251,44 @@ let run_parser_command =
 let run_il negative spec_il includes_p4 filename_p4 =
   let time_start = start () in
   try
-    (* Run test *)
-    (match
-       Interp_il.Typing_concrete.run_typing spec_il includes_p4 filename_p4
-     with
-    | WellTyped -> if negative then raise (TestCheckNegErr time_start)
-    | IllTyped (at, msg) -> raise (TestCheckErr (msg, at, time_start))
-    | IllFormed msg -> raise (TestCheckErr (msg, no_region, time_start)));
-    time_start
+    let tick = ref 0 in
+    Effect.Deep.try_with
+      (fun () ->
+        (* Parse target P4 program *)
+        let value_program = P4.Parse.parse_file includes_p4 filename_p4 in
+        (* Initialize runner and run typing relation *)
+        let ctx_init = Interp_il.Runner.init filename_p4 in
+        let _ctx, _values =
+          Interp_il.Runner.run_relation ctx_init spec_il "Program_ok"
+            [ value_program ]
+        in
+        if negative then raise (TestCheckNegErr time_start);
+        time_start)
+      ()
+      {
+        effc =
+          (fun (type a) (eff : a Effect.t) ->
+            match eff with
+            | Il.Ast.FreshVid ->
+                (* 1. Handle the FreshVid effect *)
+                Some
+                  (fun (k : (a, _) Effect.Deep.continuation) ->
+                    let id = !tick in
+                    tick := id + 1;
+                    Effect.Deep.continue k (fun () -> id))
+            | Il.Ast.ValueCreated _ ->
+                (* 2. Handle the ValueCreated effect (no-op) *)
+                Some
+                  (fun (k : (a, _) Effect.Deep.continuation) ->
+                    (* In IL, we do nothing with this announcement *)
+                    Effect.Deep.continue k ())
+            | _ -> None (* Other effects *));
+      }
   with
+  | Util.Error.InterpError (at, msg) ->
+      raise (TestCheckErr (msg, at, time_start))
+  | Util.Error.ParseError (at, msg) ->
+      raise (TestCheckErr (msg, no_region, time_start))
   | TestCheckErr _ as err -> raise err
   | TestCheckNegErr _ as err -> raise err
   | _ -> raise (TestUnknownErr time_start)
@@ -343,134 +388,10 @@ let structure_command =
      let open Core.Command.Param in
      let%map specdir = flag "-s" (required string) ~doc:"p4 spec directory" in
      fun () ->
-       try structure_test specdir
-       with ParseError (at, msg) | ElabError (at, msg) ->
-         Format.printf "%s\n" (string_of_error at msg))
-
-(* SL Interpreter test *)
-
-let run_sl negative spec_sl includes_p4 filename_p4 =
-  let time_start = start () in
-  try
-    (* Run test *)
-    (match Interp_sl.Typing.run_typing spec_sl includes_p4 filename_p4 [] with
-    | WellTyped _ -> if negative then raise (TestCheckNegErr time_start)
-    | IllTyped (at, msg, _) -> raise (TestCheckErr (msg, at, time_start))
-    | IllFormed (msg, _) -> raise (TestCheckErr (msg, no_region, time_start)));
-    time_start
-  with
-  | TestCheckErr _ as err -> raise err
-  | TestCheckNegErr _ as err -> raise err
-  | _ -> raise (TestUnknownErr time_start)
-
-let run_sl_test negative stat spec_sl includes_p4 excludes_p4 filename_p4 =
-  if List.exists (String.equal filename_p4) excludes_p4 then (
-    let log = Format.asprintf "Excluding file: %s" filename_p4 in
-    log |> print_endline;
-    {
-      stat with
-      durations = 0.0 :: stat.durations;
-      exclude_run = stat.exclude_run + 1;
-    })
-  else
-    try
-      let time_start = run_sl negative spec_sl includes_p4 filename_p4 in
-      let duration = stop time_start in
-      let log = Format.asprintf "Typecheck success: %s" filename_p4 in
-      log |> print_endline;
-      Format.eprintf "%s\n" log;
-      Format.eprintf ">>> took %.6f seconds\n" duration;
-      { stat with durations = duration :: stat.durations }
-    with
-    | TestCheckErr (msg, at, time_start) ->
-        let duration = stop time_start in
-        let log =
-          Format.asprintf "Error on typecheck: %s\n%s" filename_p4
-            (string_of_error at msg)
-        in
-        log |> print_endline;
-        Format.eprintf "%s\n" log;
-        Format.eprintf ">>> took %.6f seconds\n" duration;
-        {
-          stat with
-          durations = duration :: stat.durations;
-          fail_run = stat.fail_run + 1;
-        }
-    | TestCheckNegErr time_start ->
-        let duration = stop time_start in
-        let log = Format.asprintf "Error on typecheck: should fail" in
-        log |> print_endline;
-        Format.eprintf "%s\n" log;
-        Format.eprintf ">>> took %.6f seconds\n" duration;
-        { stat with durations = duration :: stat.durations }
-    | TestUnknownErr time_start ->
-        let duration = stop time_start in
-        let log = Format.asprintf "Error on typecheck: unknown" in
-        log |> print_endline;
-        Format.eprintf "%s\n" log;
-        Format.eprintf ">>> took %.6f seconds\n" duration;
-        {
-          stat with
-          durations = duration :: stat.durations;
-          fail_run = stat.fail_run + 1;
-        }
-
-let run_sl_test_driver negative specdir includes_p4 excludes_p4 testdir_p4 =
-  let spec_sl = structure specdir in
-  let excludes_p4 = collect_excludes excludes_p4 in
-  let filenames_p4 = collect_files ~suffix:".p4" testdir_p4 in
-  let total = List.length filenames_p4 in
-  let stat = empty_stat in
-  Format.asprintf "Running typing test on %d files\n" total |> print_endline;
-  let stat =
-    List.fold_left
-      (fun stat filename_p4 ->
-        Format.asprintf "\n>>> Running typing test on %s" filename_p4
-        |> print_endline;
-        run_sl_test negative stat spec_sl includes_p4 excludes_p4 filename_p4)
-      stat filenames_p4
-  in
-  log_stat "\nRunning typing" stat total
-
-let run_sl_command =
-  Core.Command.basic ~summary:"run typing test on SL"
-    (let open Core.Command.Let_syntax in
-     let open Core.Command.Param in
-     let%map specdir = flag "-s" (required string) ~doc:"p4 spec directory"
-     and includes_p4 = flag "-i" (listed string) ~doc:"p4 include paths"
-     and excludes_p4 = flag "-e" (listed string) ~doc:"p4 test exclude paths"
-     and testdir_p4 = flag "-d" (required string) ~doc:"p4 test directory"
-     and negative = flag "-neg" no_arg ~doc:"use negative typing rules" in
-     fun () ->
-       run_sl_test_driver negative specdir includes_p4 excludes_p4 testdir_p4)
-
-(* SL coverage test *)
-
-let cover_sl_test specdir includes_p4 excludes_p4 testdirs_p4 =
-  let spec_sl = structure specdir in
-  let excludes_p4 = collect_excludes excludes_p4 in
-  let filenames_p4 =
-    List.concat_map (collect_files ~suffix:".p4") testdirs_p4
-  in
-  let filenames_p4 =
-    List.filter
-      (fun filename_p4 -> not (List.mem filename_p4 excludes_p4))
-      filenames_p4
-  in
-  let cover =
-    Interp_sl.Typing.cover_typings spec_sl includes_p4 filenames_p4 []
-  in
-  Runtime_testgen.Cov.Multiple.log ~filename_cov_opt:None cover
-
-let cover_sl_command =
-  Core.Command.basic ~summary:"measure phantom coverage of SL"
-    (let open Core.Command.Let_syntax in
-     let open Core.Command.Param in
-     let%map specdir = flag "-s" (required string) ~doc:"p4 spec directory"
-     and includes_p4 = flag "-i" (listed string) ~doc:"p4 include paths"
-     and excludes_p4 = flag "-e" (listed string) ~doc:"p4 test exclude paths"
-     and testdirs_p4 = flag "-d" (listed string) ~doc:"p4 test directory" in
-     fun () -> cover_sl_test specdir includes_p4 excludes_p4 testdirs_p4)
+       try structure_test specdir with
+       | ParseError (at, msg) -> Format.printf "%s\n" (string_of_error at msg)
+       | ElabError (at, failtraces) ->
+           Format.printf "%s\n" (string_of_elab_errors [ (at, failtraces) ]))
 
 let command =
   Core.Command.group ~summary:"p4spec-test"
@@ -478,8 +399,6 @@ let command =
       ("elab", elab_command);
       ("run-il", run_il_command);
       ("struct", structure_command);
-      ("run-sl", run_sl_command);
-      ("cover-sl", cover_sl_command);
       ("parser", run_parser_command);
     ]
 
