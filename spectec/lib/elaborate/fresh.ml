@@ -22,7 +22,7 @@ let rec fresh_from_typ (at : region) (typ : Il.Ast.typ) :
       let id, typ, iters = fresh_from_typ at typ in
       (id, typ, iters @ [ iter ])
   | _ ->
-      let id = Il.Print.string_of_typ typ $ at in
+      let id = Il.Ast.Print.string_of_typ typ $ at in
       (id, typ, [])
 
 let fresh_from_exp ?(wildcard = false) (ids : IdSet.t) (exp : Il.Ast.exp) :

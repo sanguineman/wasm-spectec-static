@@ -1,4 +1,5 @@
+(include_subdirs qualified)
+
 (library
  (name il)
- (libraries bignum util xl el)
- (modules ast eq print print_debug free))
+ (libraries bignum util xl el))

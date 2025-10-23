@@ -27,7 +27,7 @@ fmt:
 test:
 	echo "#### Running (dune runtest)"
 	opam switch 5.1.0
-	cd spectec && opam exec -- dune runtest --profile=release && echo OK || (echo "####>" Failure running dune test. && echo "####>" Run \`make promote-spec\` to accept changes in test expectations. && false)
+	cd spectec && opam exec -- dune runtest --profile=release && echo OK || (echo "####>" Failure running dune test. && echo "####>" Run \`make promote\` to accept changes in test expectations. && false)
 
 promote:
 	opam switch 5.1.0

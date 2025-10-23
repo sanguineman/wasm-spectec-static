@@ -1,11 +1,12 @@
 open Il.Ast
-open Il.Print
 
 (* Function *)
 
 type t = tparam list * clause list
 
 let to_string (tparams, clauses) =
-  "def" ^ string_of_tparams tparams ^ "\n"
+  "def"
+  ^ Print.string_of_tparams tparams
+  ^ "\n"
   ^ String.concat "\n"
-      (List.mapi (fun idx clause -> string_of_clause idx clause) clauses)
+      (List.mapi (fun idx clause -> Print.string_of_clause idx clause) clauses)

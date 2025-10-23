@@ -1,8 +1,7 @@
 open Il.Ast
-open Il.Eq
 open Xl
 open Util.Source
-open Ast_utils
+open Il.Core.Utils
 open Hint
 module Num = Num
 module F = Format
@@ -68,7 +67,7 @@ and pp_case_v (hmap : hmap) fmt (value : value) : unit =
   let id, _, values = flatten_case_v value in
   let matches_hint nottyp value =
     match value.it with
-    | CaseV (mixop, _) -> eq_mixop (fst nottyp.it) mixop
+    | CaseV (mixop, _) -> Eq.eq_mixop (fst nottyp.it) mixop
     | _ -> false
   in
   let find_hint id value =

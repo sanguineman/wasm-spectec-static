@@ -1,47 +1,36 @@
-open Xl
 open Il.Ast
-module Value = Runtime_dynamic.Value
-open Util.Source
 
 (* Conversion between meta-numerics and OCaml numerics *)
 
 let bigint_of_value (value : value) : Bigint.t =
-  value |> Value.get_num |> Num.to_int
-
-let value_of_bigint (i : Bigint.t) : value =
-  let value =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.NumT `NatT in
-    NumV (`Nat i) $$$ { vid; typ }
-  in
-  value
+  value |> Value.get_num |> Xl.Num.to_int
 
 (* dec $sum(nat* ) : nat *)
 
-let sum (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let values =
-    Extract.one at values_input |> Value.get_list |> List.map bigint_of_value
-  in
-  let sum = List.fold_left Bigint.( + ) Bigint.zero values in
-  value_of_bigint sum
+let sum ~at (nums : Bigint.t list) : (Value.t, Err.t) result =
+  at |> ignore;
+  let sum = List.fold_left Bigint.( + ) Bigint.zero nums in
+  Ok (Value.nat sum)
 
 (* dec $max(nat* ) : nat *)
 
-let max (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let values =
-    Extract.one at values_input |> Value.get_list |> List.map bigint_of_value
-  in
-  let max = List.fold_left Bigint.max Bigint.zero values in
-  value_of_bigint max
+(* Returns zero if list is empty *)
+let max ~at (nums : Bigint.t list) : (Value.t, Err.t) result =
+  at |> ignore;
+  let max_value = List.fold_left Bigint.max Bigint.zero nums in
+  Ok (Value.nat max_value)
 
 (* dec $min(nat* ) : nat *)
 
-let min (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let values =
-    Extract.one at values_input |> Value.get_list |> List.map bigint_of_value
-  in
-  let min = List.fold_left Bigint.min Bigint.zero values in
-  value_of_bigint min
+(* Returns zero if list is empty *)
+let min ~at (nums : Bigint.t list) : (Value.t, Err.t) result =
+  at |> ignore;
+  let min = List.fold_left Bigint.min Bigint.zero nums in
+  Ok (Value.nat min)
+
+let builtins =
+  [
+    ("sum", Define.T0.a1 (Arg.list_of Arg.nat) sum);
+    ("max", Define.T0.a1 (Arg.list_of Arg.nat) max);
+    ("min", Define.T0.a1 (Arg.list_of Arg.nat) min);
+  ]

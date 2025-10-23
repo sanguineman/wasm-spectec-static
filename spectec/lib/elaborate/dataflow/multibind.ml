@@ -130,7 +130,7 @@ let rec rename_exp (dctx : Dctx.t) (renv : REnv.t) (exp : exp) :
         (Format.asprintf
            "iterated expression should initially have no annotations, but got \
             %s"
-           (Il.Print.string_of_iterexp iterexp))
+           (Il.Ast.Print.string_of_iterexp iterexp))
   | IterE (exp, (iter, [])) ->
       let dctx, renv, exp = rename_exp dctx renv exp in
       let exp = IterE (exp, (iter, [])) $$ (at, note) in

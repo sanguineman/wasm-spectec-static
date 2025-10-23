@@ -1,5 +1,4 @@
 open Il.Ast
-open Il.Print
 open Util.Source
 
 (* Execution trace *)
@@ -182,7 +181,7 @@ let rec log ?(tagger = Tagger.empty) ?(depth = 0) ?(idx = 0) ?(verbose = false)
     | false, _ | true, [] -> ""
     | _ ->
         Format.asprintf "--- input ---\n%s\n-------------\n"
-          (String.concat "\n" (List.map string_of_value values))
+          (String.concat "\n" (List.map Print.string_of_value values))
   in
   let log_time fmt time =
     match time with ING _ -> assert false | _ -> pp_time fmt time
@@ -210,7 +209,8 @@ let rec log ?(tagger = Tagger.empty) ?(depth = 0) ?(idx = 0) ?(verbose = false)
         (logs ~tagger ~depth ~verbose subtraces)
         (tag tagger depth) log_time time
   | Prem prem ->
-      Format.asprintf "[%s-%d] %s" (tag tagger depth) idx (string_of_prem prem)
+      Format.asprintf "[%s-%d] %s" (tag tagger depth) idx
+        (Print.string_of_prem prem)
   | Empty -> ""
 
 and logs ?(tagger = Tagger.empty) ?(depth = 0) ?(verbose = false)

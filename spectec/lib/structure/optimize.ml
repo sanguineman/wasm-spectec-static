@@ -137,7 +137,7 @@ module Bind = struct
   (* Constructors *)
 
   let init_expunit (exp : exp) (iterexps : iterexp list) : expunit =
-    let ids = Il.Free.free_exp exp in
+    let ids = Il.Ast.Free.free_exp exp in
     let iterexps =
       List.map
         (fun (iter, vars) ->
