@@ -88,7 +88,3 @@ let map : Value.t VMap.t t =
       let* pairs = (list_of colon_pair) at pair_list_val in
       Ok (VMap.of_list pairs)
   | _ -> Error (Err.type_err at "Expected a map value" v)
-
-let all_of (p : 'a t) (at : region) (vs : value list) : ('a list, Err.t) result
-    =
-  result_all (List.map (p at) vs)

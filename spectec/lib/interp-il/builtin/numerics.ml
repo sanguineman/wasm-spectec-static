@@ -123,15 +123,15 @@ let bitacc ~at (n : Bigint.t) (m : Bigint.t) (l : Bigint.t) :
 
 let builtins : (string * Define.t) list =
   [
-    ("shl", Define.make_two_args Parse.int Parse.int shl);
-    ("shr", Define.make_two_args Parse.int Parse.int shr);
-    ("shr_arith", Define.make_three_args Parse.int Parse.int Parse.int shr_arith);
-    ("pow2", Define.make_one_arg Parse.nat pow2);
-    ("to_int", Define.make_two_args Parse.int Parse.int to_int);
-    ("to_bitstr", Define.make_two_args Parse.int Parse.int to_bitstr);
-    ("bneg", Define.make_one_arg Parse.int bneg);
-    ("band", Define.make_two_args Parse.int Parse.int band);
-    ("bxor", Define.make_two_args Parse.int Parse.int bxor);
-    ("bor", Define.make_two_args Parse.int Parse.int bor);
-    ("bitacc", Define.make_three_args Parse.int Parse.int Parse.int bitacc);
+    ("shl", Define.T0.a2 Arg.int Arg.int shl);
+    ("shr", Define.T0.a2 Arg.int Arg.int shr);
+    ("shr_arith", Define.T0.a3 Arg.int Arg.int Arg.int shr_arith);
+    ("pow2", Define.T0.a1 Arg.nat pow2);
+    ("to_int", Define.T0.a2 Arg.int Arg.int to_int);
+    ("to_bitstr", Define.T0.a2 Arg.int Arg.int to_bitstr);
+    ("bneg", Define.T0.a1 Arg.int bneg);
+    ("band", Define.T0.a2 Arg.int Arg.int band);
+    ("bxor", Define.T0.a2 Arg.int Arg.int bxor);
+    ("bor", Define.T0.a2 Arg.int Arg.int bor);
+    ("bitacc", Define.T0.a3 Arg.int Arg.int Arg.int bitacc);
   ]

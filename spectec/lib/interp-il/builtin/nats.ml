@@ -30,7 +30,7 @@ let min ~at (nums : Bigint.t list) : (Value.t, Err.t) result =
 
 let builtins =
   [
-    ("sum", Define.make_one_arg (Parse.list_of Parse.nat) sum);
-    ("max", Define.make_one_arg (Parse.list_of Parse.nat) max);
-    ("min", Define.make_one_arg (Parse.list_of Parse.nat) min);
+    ("sum", Define.T0.a1 (Arg.list_of Arg.nat) sum);
+    ("max", Define.T0.a1 (Arg.list_of Arg.nat) max);
+    ("min", Define.T0.a1 (Arg.list_of Arg.nat) min);
   ]

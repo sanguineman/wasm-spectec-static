@@ -117,20 +117,11 @@ let update_map = add_map
 
 let builtins : (string * Define.t) list =
   [
-    ("find_map", Define.make_two_targs_two_args Parse.map Parse.value find_map);
-    ( "find_maps",
-      Define.make_two_targs_two_args (Parse.list_of Parse.map)
-        Parse.value (* K *)
-        find_maps );
-    ( "add_map",
-      Define.make_two_targs_three_args Parse.map Parse.value Parse.value add_map
-    );
+    ("find_map", Define.T2.a2 Arg.map Arg.value find_map);
+    ("find_maps", Define.T2.a2 (Arg.list_of Arg.map) Arg.value (* K *) find_maps);
+    ("add_map", Define.T2.a3 Arg.map Arg.value Arg.value add_map);
     ( "adds_map",
-      Define.make_two_targs_three_args Parse.map
-        (Parse.list_of Parse.value)
-        (Parse.list_of Parse.value)
+      Define.T2.a3 Arg.map (Arg.list_of Arg.value) (Arg.list_of Arg.value)
         adds_map );
-    ( "update_map",
-      Define.make_two_targs_three_args Parse.map Parse.value Parse.value
-        update_map );
+    ("update_map", Define.T2.a3 Arg.map Arg.value Arg.value update_map);
   ]

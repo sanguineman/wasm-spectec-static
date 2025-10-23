@@ -58,18 +58,9 @@ let assoc_ ~at (_typ_x : targ) (typ_y : targ) (key_query : Value.t)
 
 let builtins =
   [
-    ("rev_", Define.make_one_targ_one_arg (Parse.list_of Parse.value) rev_);
-    ( "concat_",
-      Define.make_one_targ_one_arg
-        (Parse.list_of (Parse.list_of Parse.value))
-        concat_ );
-    ( "distinct_",
-      Define.make_one_targ_one_arg (Parse.list_of Parse.value) distinct_ );
-    ( "partition_",
-      Define.make_one_targ_two_args
-        (Parse.list_of Parse.value)
-        Parse.nat partition_ );
-    ( "assoc_",
-      Define.make_two_targs_two_args Parse.value (Parse.list_of Parse.pair)
-        assoc_ );
+    ("rev_", Define.T1.a1 (Arg.list_of Arg.value) rev_);
+    ("concat_", Define.T1.a1 (Arg.list_of (Arg.list_of Arg.value)) concat_);
+    ("distinct_", Define.T1.a1 (Arg.list_of Arg.value) distinct_);
+    ("partition_", Define.T1.a2 (Arg.list_of Arg.value) Arg.nat partition_);
+    ("assoc_", Define.T2.a2 Arg.value (Arg.list_of Arg.pair) assoc_);
   ]

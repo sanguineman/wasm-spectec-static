@@ -7,7 +7,7 @@ let ( let* ) = Result.bind
 
 module StringMap = Map.Make (String)
 
-let build_registry () : (Define.t StringMap.t, string) result =
+let funcs : Define.t StringMap.t =
   let builtins =
     [
       Nats.builtins;
@@ -28,16 +28,13 @@ let build_registry () : (Define.t StringMap.t, string) result =
         else (StringMap.add name def m, dups))
       (StringMap.empty, []) builtins
   in
-  if dups = [] then Ok map
+  if dups = [] then map
   else
     let dup_list = String.concat ", " (List.rev dups) in
-    Error (Printf.sprintf "Duplicate builtin function definitions: %s" dup_list)
-
-let funcs : Define.t StringMap.t =
-  let map =
-    match build_registry () with Ok map -> map | Error msg -> failwith msg
-  in
-  map
+    let msg =
+      Printf.sprintf "Duplicate builtin function definitions: %s" dup_list
+    in
+    failwith msg
 
 let is_builtin (id : id) : bool = StringMap.mem id.it funcs
 

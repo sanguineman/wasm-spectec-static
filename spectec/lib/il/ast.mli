@@ -7,7 +7,7 @@ module Print : module type of Core.Print
 module Eq : module type of Core.Eq
 module Free : module type of Core.Free
 
-(** Constructors and operations for IL Values. *)
+(** Constructors and operations on IL Values. *)
 module Value : sig
   include module type of Core.Value
 

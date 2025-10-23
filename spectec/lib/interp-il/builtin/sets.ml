@@ -81,12 +81,10 @@ let eq_set ~at (_key_typ : targ) (set_a : VSet.t) (set_b : VSet.t) =
 
 let builtins : (string * Define.t) list =
   [
-    ( "intersect_set",
-      Define.make_one_targ_two_args Parse.set Parse.set intersect_set );
-    ("union_set", Define.make_one_targ_two_args Parse.set Parse.set union_set);
-    ( "unions_set",
-      Define.make_one_targ_one_arg (Parse.list_of Parse.set) unions_set );
-    ("diff_set", Define.make_one_targ_two_args Parse.set Parse.set diff_set);
-    ("sub_set", Define.make_one_targ_two_args Parse.set Parse.set sub_set);
-    ("eq_set", Define.make_one_targ_two_args Parse.set Parse.set eq_set);
+    ("intersect_set", Define.T1.a2 Arg.set Arg.set intersect_set);
+    ("union_set", Define.T1.a2 Arg.set Arg.set union_set);
+    ("unions_set", Define.T1.a1 (Arg.list_of Arg.set) unions_set);
+    ("diff_set", Define.T1.a2 Arg.set Arg.set diff_set);
+    ("sub_set", Define.T1.a2 Arg.set Arg.set sub_set);
+    ("eq_set", Define.T1.a2 Arg.set Arg.set eq_set);
   ]

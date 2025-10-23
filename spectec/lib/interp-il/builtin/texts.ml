@@ -39,7 +39,7 @@ let strip_suffix ~at (text : string) (suffix : string) : (Value.t, Err.t) result
 
 let builtins =
   [
-    ("int_to_text", Define.make_one_arg Parse.num int_to_text);
-    ("strip_prefix", Define.make_two_args Parse.text Parse.text strip_prefix);
-    ("strip_suffix", Define.make_two_args Parse.text Parse.text strip_suffix);
+    ("int_to_text", Define.T0.a1 Arg.num int_to_text);
+    ("strip_prefix", Define.T0.a2 Arg.text Arg.text strip_prefix);
+    ("strip_suffix", Define.T0.a2 Arg.text Arg.text strip_suffix);
   ]
