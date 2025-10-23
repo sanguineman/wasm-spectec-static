@@ -1,11 +1,4 @@
-open Xl
 open Il.Ast
-open Util.Source
-
-(* Conversion between meta-numerics and OCaml numerics *)
-
-let bigint_of_value (value : value) : Bigint.t =
-  value |> Value.get_num |> Num.to_int
 
 (* Built-in implementations *)
 
@@ -15,12 +8,9 @@ let rec shl' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
   if Bigint.(o > zero) then shl' Bigint.(v * (one + one)) Bigint.(o - one)
   else v
 
-let shl (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let value_base, value_offset = Extract.two at values_input in
-  let base = bigint_of_value value_base in
-  let offset = bigint_of_value value_offset in
-  shl' base offset |> Value.int
+let shl ~at (base : Bigint.t) (offset : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (shl' base offset))
 
 (* dec $shr(int, int) : int *)
 
@@ -30,42 +20,30 @@ let rec shr' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
     shr' v_shifted Bigint.(o - one)
   else v
 
-let shr (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let value_base, value_offset = Extract.two at values_input in
-  let base = bigint_of_value value_base in
-  let offset = bigint_of_value value_offset in
-  shr' base offset |> Value.int
+let shr ~at (base : Bigint.t) (offset : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (shr' base offset))
 
 (* dec $shr_arith(int, int, int) : int *)
 
-let shr_arith' (v : Bigint.t) (o : Bigint.t) (m : Bigint.t) : Bigint.t =
-  let rec shr_arith'' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
+let shr_arith ~at (base : Bigint.t) (offset : Bigint.t) (modulus : Bigint.t) :
+    (Value.t, Err.t) result =
+  at |> ignore;
+  let rec shr_arith' (v : Bigint.t) (o : Bigint.t) (m : Bigint.t) : Bigint.t =
     if Bigint.(o > zero) then
       let v_shifted = Bigint.((v / (one + one)) + m) in
-      shr_arith'' v_shifted Bigint.(o - one)
+      shr_arith' v_shifted Bigint.(o - one) m
     else v
   in
-  shr_arith'' v o
-
-let shr_arith (at : region) (targs : targ list) (values_input : value list) :
-    value =
-  Extract.zero at targs;
-  let value_base, value_offset, value_modulus = Extract.three at values_input in
-  let base = bigint_of_value value_base in
-  let offset = bigint_of_value value_offset in
-  let modulus = bigint_of_value value_modulus in
-  shr_arith' base offset modulus |> Value.int
+  Ok (Value.int (shr_arith' base offset modulus))
 
 (* dec $pow2(nat) : int *)
 
 let pow2' (w : Bigint.t) : Bigint.t = shl' Bigint.one w
 
-let pow2 (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let value_width = Extract.one at values_input in
-  let width = bigint_of_value value_width in
-  pow2' width |> Value.int
+let pow2 ~at (width : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (pow2' width))
 
 (* dec $to_int(int, bitstr) : int *)
 
@@ -76,13 +54,10 @@ let rec to_int' (w : Bigint.t) (n : Bigint.t) : Bigint.t =
   else if Bigint.(n < -(w' / two)) then to_int' w Bigint.(n + w')
   else n
 
-let to_int (at : region) (targs : targ list) (values_input : value list) : value
+let to_int ~at (width : Bigint.t) (bitstr : Bigint.t) : (Value.t, Err.t) result
     =
-  Extract.zero at targs;
-  let value_width, value_bitstr = Extract.two at values_input in
-  let width = bigint_of_value value_width in
-  let bitstr = bigint_of_value value_bitstr in
-  to_int' width bitstr |> Value.int
+  at |> ignore;
+  Ok (Value.int (to_int' width bitstr))
 
 (* dec $to_bitstr(int, int) : bitstr *)
 
@@ -92,150 +67,71 @@ let rec to_bitstr' (w : Bigint.t) (n : Bigint.t) : Bigint.t =
   else if Bigint.(n < zero) then to_bitstr' w Bigint.(n + w')
   else n
 
-let to_bitstr (at : region) (targs : targ list) (values_input : value list) :
-    value =
-  Extract.zero at targs;
-  let value_width, value_int = Extract.two at values_input in
-  let width = bigint_of_value value_width in
-  let rawint = bigint_of_value value_int in
-  to_bitstr' width rawint |> Value.int
+let to_bitstr ~at (width : Bigint.t) (rawint : Bigint.t) :
+    (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (to_bitstr' width rawint))
 
 (* dec $bneg(int) : int *)
 
-let bneg (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let value = Extract.one at values_input in
-  let rawint = bigint_of_value value in
-  Bigint.bit_not rawint |> Value.int
+let bneg ~at (n : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (Bigint.bit_not n))
 
 (* dec $band(int, int) : int *)
 
-let band (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let value_l, value_r = Extract.two at values_input in
-  let rawint_l = bigint_of_value value_l in
-  let rawint_r = bigint_of_value value_r in
-  Bigint.bit_and rawint_l rawint_r |> Value.int
+let band ~at (l : Bigint.t) (r : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (Bigint.bit_and l r))
 
 (* dec $bxor(int, int) : int *)
 
-let bxor (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let value_l, value_r = Extract.two at values_input in
-  let rawint_l = bigint_of_value value_l in
-  let rawint_r = bigint_of_value value_r in
-  Bigint.bit_xor rawint_l rawint_r |> Value.int
+let bxor ~at (l : Bigint.t) (r : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (Bigint.bit_xor l r))
 
 (* dec $bor(int, int) : int *)
 
-let bor (at : region) (targs : targ list) (values_input : value list) : value =
-  Extract.zero at targs;
-  let value_l, value_r = Extract.two at values_input in
-  let rawint_l = bigint_of_value value_l in
-  let rawint_r = bigint_of_value value_r in
-  Bigint.bit_or rawint_l rawint_r |> Value.int
+let bor ~at (l : Bigint.t) (r : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (Bigint.bit_or l r))
 
 (* dec $bitacc(int, int, int) : int *)
 
-let bitacc' (n : Bigint.t) (m : Bigint.t) (l : Bigint.t) : Bigint.t =
-  let slice_width = Bigint.(m + one - l) in
-  if Bigint.(l < zero) then
-    raise (Invalid_argument "bitslice x[y:z] must have y > z > 0");
-  let shifted = Bigint.(n asr to_int_exn l) in
-  let mask = Bigint.(pow2' slice_width - one) in
-  Bigint.bit_and shifted mask
-
-let bitacc (at : region) (targs : targ list) (values_input : value list) : value
-    =
-  Extract.zero at targs;
-  let value_b, value_h, value_l = Extract.three at values_input in
-  let rawint_b = bigint_of_value value_b in
-  let rawint_h = bigint_of_value value_h in
-  let rawint_l = bigint_of_value value_l in
-  bitacc' rawint_b rawint_h rawint_l |> Value.int
-
-(* dec $shl(int, int) : int *)
-let rec shl_impl' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
-  if Bigint.(o > zero) then shl_impl' Bigint.(v * (one + one)) Bigint.(o - one)
-  else v
-
-let shl_impl ~at (base : Bigint.t) (offset : Bigint.t) : (Value.t, Err.t) result
-    =
-  at |> ignore;
-  (* Per user request *)
-  Ok (Value.int (shl_impl' base offset))
-
-(* dec $shr(int, int) : int *)
-let rec shr_impl' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
-  if Bigint.(o > zero) then
-    let v_shifted = Bigint.(v / (one + one)) in
-    shr_impl' v_shifted Bigint.(o - one)
-  else v
-
-let shr_impl ~at (base : Bigint.t) (offset : Bigint.t) : (Value.t, Err.t) result
-    =
-  at |> ignore;
-  Ok (Value.int (shr_impl' base offset))
-
-(* dec $shr_arith(int, int, int) : int *)
-let shr_arith_impl' (v : Bigint.t) (o : Bigint.t) (m : Bigint.t) : Bigint.t =
-  let rec shr_arith'' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
-    if Bigint.(o > zero) then
-      let v_shifted = Bigint.((v / (one + one)) + m) in
-      shr_arith'' v_shifted Bigint.(o - one)
-    else v
-  in
-  shr_arith'' v o
-
-let shr_arith_impl ~at (base : Bigint.t) (offset : Bigint.t)
-    (modulus : Bigint.t) : (Value.t, Err.t) result =
-  at |> ignore;
-  Ok (Value.int (shr_arith_impl' base offset modulus))
-
-(* dec $pow2(nat) : int *)
-(* Note: pow2' uses shl_impl', so we redefine it here *)
-let pow2_impl' (w : Bigint.t) : Bigint.t = shl_impl' Bigint.one w
-
-let pow2_impl ~at (width : Bigint.t) : (Value.t, Err.t) result =
-  at |> ignore;
-  Ok (Value.int (pow2_impl' width))
-
-(* dec $to_int(int, bitstr) : int *)
-let rec to_int_impl' (w : Bigint.t) (n : Bigint.t) : Bigint.t =
-  let two = Bigint.(one + one) in
-  let w' = pow2_impl' w in
-  (* Use the helper from above *)
-  if Bigint.(n >= w' / two) then to_int_impl' w Bigint.(n - w')
-  else if Bigint.(n < -(w' / two)) then to_int_impl' w Bigint.(n + w')
-  else n
-
-let to_int_impl ~at (width : Bigint.t) (bitstr : Bigint.t) :
+let bitacc ~at (n : Bigint.t) (m : Bigint.t) (l : Bigint.t) :
     (Value.t, Err.t) result =
-  at |> ignore;
-  Ok (Value.int (to_int_impl' width bitstr))
-
-(* dec $to_bitstr(int, int) : bitstr *)
-let rec to_bitstr_impl' (w : Bigint.t) (n : Bigint.t) : Bigint.t =
-  let w' = pow2_impl' w in
-  if Bigint.(n >= w') then Bigint.(n % w')
-  else if Bigint.(n < zero) then to_bitstr_impl' w Bigint.(n + w')
-  else n
-
-let to_bitstr_impl ~at (width : Bigint.t) (rawint : Bigint.t) :
-    (Value.t, Err.t) result =
-  at |> ignore;
-  (* The original returned bitstr, which we assume is just an int *)
-  Ok (Value.int (to_bitstr_impl' width rawint))
+  try
+    (* 1. Validation (from the original bitacc' logic) *)
+    if Bigint.(l < zero) then
+      Error (Err.runtime at "bitacc: slice x[y:z] must have z >= 0")
+    else if Bigint.(m < l) then
+      Error (Err.runtime at "bitacc: slice x[y:z] must have y >= z")
+    else
+      let slice_width = Bigint.(m + one - l) in
+      let l_int = Bigint.to_int_exn l in
+      let shifted = Bigint.(n asr l_int) in
+      let mask = Bigint.(pow2' slice_width - one) in
+      let result = Bigint.bit_and shifted mask in
+      Ok (Value.int result)
+  with
+  | Failure msg ->
+      (* Catches 'to_int_exn' which raises 'Failure' *)
+      Error
+        (Err.runtime at
+           (Printf.sprintf "bitacc: slice index is too large (%s)" msg))
+  | _ -> Error (Err.runtime at "bitacc: unexpected error during calculation")
 
 let builtins : (string * Define.t) list =
   [
-    ("shl", Define.make_two_args Parse.int Parse.int shl_impl);
-    ("shr", Define.make_two_args Parse.int Parse.int shr_impl);
-    ( "shr_arith",
-      Define.make_three_args Parse.int Parse.int Parse.int shr_arith_impl );
-    ( "pow2",
-      (* The original took a nat, so we use Parse.nat *)
-      Define.make_one_arg Parse.nat pow2_impl );
-    ("to_int", Define.make_two_args Parse.int Parse.int to_int_impl);
-    ("to_bitstr", Define.make_two_args Parse.int Parse.int to_bitstr_impl);
+    ("shl", Define.make_two_args Parse.int Parse.int shl);
+    ("shr", Define.make_two_args Parse.int Parse.int shr);
+    ("shr_arith", Define.make_three_args Parse.int Parse.int Parse.int shr_arith);
+    ("pow2", Define.make_one_arg Parse.nat pow2);
+    ("to_int", Define.make_two_args Parse.int Parse.int to_int);
+    ("to_bitstr", Define.make_two_args Parse.int Parse.int to_bitstr);
+    ("bneg", Define.make_one_arg Parse.int bneg);
+    ("band", Define.make_two_args Parse.int Parse.int band);
+    ("bxor", Define.make_two_args Parse.int Parse.int bxor);
+    ("bor", Define.make_two_args Parse.int Parse.int bor);
+    ("bitacc", Define.make_three_args Parse.int Parse.int Parse.int bitacc);
   ]

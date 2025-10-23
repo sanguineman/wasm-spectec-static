@@ -72,17 +72,15 @@ let parse_command =
                (fun (type a) (eff : a Effect.t) ->
                  match eff with
                  | Il.Ast.FreshVid ->
-                     (* 1. Handle the FreshVid effect *)
                      Some
                        (fun (k : (a, _) Effect.Deep.continuation) ->
                          let id = !vid_counter in
                          incr vid_counter;
                          Effect.Deep.continue k (fun () -> id))
                  | Il.Ast.ValueCreated _ ->
-                     (* 2. Handle the ValueCreated effect (no-op) *)
                      Some
                        (fun (k : (a, _) Effect.Deep.continuation) ->
-                         (* In IL, we do nothing with this announcement *)
+                         (* No-op *)
                          Effect.Deep.continue k ())
                  | Il.Ast.FreshTid ->
                      Some
@@ -135,17 +133,15 @@ let run_il_command =
                (fun (type a) (eff : a Effect.t) ->
                  match eff with
                  | Il.Ast.FreshVid ->
-                     (* 1. Handle the FreshVid effect *)
                      Some
                        (fun (k : (a, _) Effect.Deep.continuation) ->
                          let id = !vid_counter in
                          incr vid_counter;
                          Effect.Deep.continue k (fun () -> id))
                  | Il.Ast.ValueCreated _ ->
-                     (* 2. Handle the ValueCreated effect (no-op) *)
                      Some
                        (fun (k : (a, _) Effect.Deep.continuation) ->
-                         (* In IL, we do nothing with this announcement *)
+                         (* No-op *)
                          Effect.Deep.continue k ())
                  | Il.Ast.FreshTid ->
                      Some

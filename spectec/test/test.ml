@@ -251,7 +251,8 @@ let run_parser_command =
 let run_il negative spec_il includes_p4 filename_p4 =
   let time_start = start () in
   try
-    let tick = ref 0 in
+    let vid_counter = ref 0 in
+    let tid_counter = ref 0 in
     Effect.Deep.try_with
       (fun () ->
         (* Parse target P4 program *)
@@ -270,18 +271,22 @@ let run_il negative spec_il includes_p4 filename_p4 =
           (fun (type a) (eff : a Effect.t) ->
             match eff with
             | Il.Ast.FreshVid ->
-                (* 1. Handle the FreshVid effect *)
                 Some
                   (fun (k : (a, _) Effect.Deep.continuation) ->
-                    let id = !tick in
-                    tick := id + 1;
+                    let id = !vid_counter in
+                    incr vid_counter;
                     Effect.Deep.continue k (fun () -> id))
             | Il.Ast.ValueCreated _ ->
-                (* 2. Handle the ValueCreated effect (no-op) *)
                 Some
                   (fun (k : (a, _) Effect.Deep.continuation) ->
-                    (* In IL, we do nothing with this announcement *)
+                    (* No-op *)
                     Effect.Deep.continue k ())
+            | Il.Ast.FreshTid ->
+                Some
+                  (fun (k : (a, _) Effect.Deep.continuation) ->
+                    let tid = "FRESH__" ^ string_of_int !tid_counter in
+                    incr tid_counter;
+                    Effect.Deep.continue k (fun () -> tid))
             | _ -> None (* Other effects *));
       }
   with

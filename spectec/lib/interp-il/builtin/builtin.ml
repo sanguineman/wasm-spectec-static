@@ -20,6 +20,7 @@ let build_registry () : (Define.t StringMap.t, string) result =
     ]
     |> List.concat
   in
+  (* Check for duplicates *)
   let map, dups =
     List.fold_left
       (fun (m, dups) (name, def) ->
