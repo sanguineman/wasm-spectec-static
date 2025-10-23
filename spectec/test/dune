@@ -40,11 +40,11 @@
      -s
      ../../../../reference-specs/p4-concrete
      -i
-     ../../../../../0_p4-spectec/p4c/p4include
+     ../../../../p4-tests/includes
      -e
-     ../../../../../0_p4-spectec/excludes
+     ../../../../p4-tests/excludes
      -d
-     ../../../../../0_p4-spectec/p4c/testdata/p4_16_samples)))))
+     ../../../../p4-tests/tests/p4_16_samples)))))
 
 ; (rule
 ;  (target run_il_neg_p4c.actual)

@@ -101,7 +101,6 @@ let bor ~at (l : Bigint.t) (r : Bigint.t) : (Value.t, Err.t) result =
 let bitacc ~at (n : Bigint.t) (m : Bigint.t) (l : Bigint.t) :
     (Value.t, Err.t) result =
   try
-    (* 1. Validation (from the original bitacc' logic) *)
     if Bigint.(l < zero) then
       Error (Err.runtime at "bitacc: slice x[y:z] must have z >= 0")
     else if Bigint.(m < l) then
@@ -115,7 +114,7 @@ let bitacc ~at (n : Bigint.t) (m : Bigint.t) (l : Bigint.t) :
       Ok (Value.int result)
   with
   | Failure msg ->
-      (* Catches 'to_int_exn' which raises 'Failure' *)
+      (* Catches 'to_int_exn' *)
       Error
         (Err.runtime at
            (Printf.sprintf "bitacc: slice index is too large (%s)" msg))

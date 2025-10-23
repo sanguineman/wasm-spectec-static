@@ -68,7 +68,7 @@ let collect_exclude filename_exclude =
   let ic = open_in filename_exclude in
   let rec parse_lines excludes =
     try
-      let exclude = "../../../../../0_p4-spectec/" ^ input_line ic in
+      let exclude = "../../../../p4-tests/tests/" ^ input_line ic in
       let excludes = exclude :: excludes in
       parse_lines excludes
     with End_of_file -> excludes
