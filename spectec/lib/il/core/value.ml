@@ -106,7 +106,7 @@ let get_opt (value : t) =
 let get_struct (value : t) =
   match value.it with StructV fields -> fields | _ -> failwith "get_struct"
 
-let bool (b : bool) : t = BoolV b |> make_val BoolT
+let bool (b : bool) : t = Make.bool BoolT b
 let nat (i : Bigint.t) : t = NumV (`Nat i) |> make_val (NumT `NatT)
 let int (i : Bigint.t) : t = NumV (`Int i) |> make_val (NumT `IntT)
 let text (s : string) : t = TextV s |> make_val TextT

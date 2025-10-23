@@ -45,7 +45,8 @@ let parse_command =
        try
          let spec = List.concat_map Frontend.Parse.parse_file filenames in
          let spec_il = elab_spec spec in
-         let tick = ref 0 in
+         let vid_counter = ref 0 in
+         let tid_counter = ref 0 in
          Effect.Deep.try_with
            (fun () ->
              let value_program =
@@ -74,8 +75,8 @@ let parse_command =
                      (* 1. Handle the FreshVid effect *)
                      Some
                        (fun (k : (a, _) Effect.Deep.continuation) ->
-                         let id = !tick in
-                         tick := id + 1;
+                         let id = !vid_counter in
+                         incr vid_counter;
                          Effect.Deep.continue k (fun () -> id))
                  | Il.Ast.ValueCreated _ ->
                      (* 2. Handle the ValueCreated effect (no-op) *)
@@ -83,6 +84,12 @@ let parse_command =
                        (fun (k : (a, _) Effect.Deep.continuation) ->
                          (* In IL, we do nothing with this announcement *)
                          Effect.Deep.continue k ())
+                 | Il.Ast.FreshTid ->
+                     Some
+                       (fun (k : (a, _) Effect.Deep.continuation) ->
+                         let tid = "FRESH__" ^ string_of_int !tid_counter in
+                         incr tid_counter;
+                         Effect.Deep.continue k (fun () -> tid))
                  | _ -> None (* Other effects *));
            }
        with
@@ -107,7 +114,8 @@ let run_il_command =
        try
          let spec = List.concat_map Frontend.Parse.parse_file filenames_spec in
          let spec_il = elab_spec spec in
-         let tick = ref 0 in
+         let vid_counter = ref 0 in
+         let tid_counter = ref 0 in
          Effect.Deep.try_with
            (fun () ->
              let value_program =
@@ -130,8 +138,8 @@ let run_il_command =
                      (* 1. Handle the FreshVid effect *)
                      Some
                        (fun (k : (a, _) Effect.Deep.continuation) ->
-                         let id = !tick in
-                         tick := id + 1;
+                         let id = !vid_counter in
+                         incr vid_counter;
                          Effect.Deep.continue k (fun () -> id))
                  | Il.Ast.ValueCreated _ ->
                      (* 2. Handle the ValueCreated effect (no-op) *)
@@ -139,6 +147,12 @@ let run_il_command =
                        (fun (k : (a, _) Effect.Deep.continuation) ->
                          (* In IL, we do nothing with this announcement *)
                          Effect.Deep.continue k ())
+                 | Il.Ast.FreshTid ->
+                     Some
+                       (fun (k : (a, _) Effect.Deep.continuation) ->
+                         let tid = "FRESH__" ^ string_of_int !tid_counter in
+                         incr tid_counter;
+                         Effect.Deep.continue k (fun () -> tid))
                  | _ -> None (* Other effects *));
            }
        with

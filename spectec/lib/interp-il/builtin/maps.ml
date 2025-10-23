@@ -67,7 +67,7 @@ let value_of_map (typ_key : typ) (typ_value : typ) (map : map) : value =
 
 (* dec $find_map<K, V>(map<K, V>, K) : V? *)
 
-let find_map (at : region) (targs : targ list) (values_input : value list) :
+let find_map ~(at : region) (targs : targ list) (values_input : value list) :
     value =
   let _typ_key, typ_value = Extract.two at targs in
   let value_map, value_key = Extract.two at values_input in
@@ -82,7 +82,7 @@ let find_map (at : region) (targs : targ list) (values_input : value list) :
 
 (* dec $find_maps<K, V>(map<K, V>*, K) : V? *)
 
-let find_maps (at : region) (targs : targ list) (values_input : value list) :
+let find_maps ~(at : region) (targs : targ list) (values_input : value list) :
     value =
   let _typ_key, typ_value = Extract.two at targs in
   let value_maps, value_key = Extract.two at values_input in
@@ -104,7 +104,7 @@ let find_maps (at : region) (targs : targ list) (values_input : value list) :
 
 (* dec $add_map<K, V>(map<K, V>, K, V) : map<K, V> *)
 
-let add_map (at : region) (targs : targ list) (values_input : value list) :
+let add_map ~(at : region) (targs : targ list) (values_input : value list) :
     value =
   let typ_key, typ_value = Extract.two at targs in
   let value_map, value_key, value_value = Extract.three at values_input in
@@ -114,7 +114,7 @@ let add_map (at : region) (targs : targ list) (values_input : value list) :
 
 (* dec $adds_map<K, V>(map<K, V>, K*, V* ) : map<K, V> *)
 
-let adds_map (at : region) (targs : targ list) (values_input : value list) :
+let adds_map ~(at : region) (targs : targ list) (values_input : value list) :
     value =
   let typ_key, typ_value = Extract.two at targs in
   let value_map, value_keys, value_values = Extract.three at values_input in
@@ -128,10 +128,85 @@ let adds_map (at : region) (targs : targ list) (values_input : value list) :
 
 (* dec $update_map<K, V>(map<K, V>, K, V) : map<K, V> *)
 
-let update_map (at : region) (targs : targ list) (values_input : value list) :
+let update_map ~(at : region) (targs : targ list) (values_input : value list) :
     value =
   let typ_key, typ_value = Extract.two at targs in
   let value_map, value_key, value_value = Extract.three at values_input in
   map_of_value value_map
   |> VMap.add value_key value_value
   |> value_of_map typ_key typ_value
+
+(* dec $find_map<K, V>(map<K, V>, K) : V? *)
+let find_map_impl ~at (_typ_key : targ) (typ_val : targ) (map : map)
+    (key : Value.t) =
+  at |> ignore;
+  let result_opt = VMap.find_opt key map in
+  Ok (Value.opt typ_val.it result_opt)
+
+(* dec $find_maps<K, V>(map<K, V>*, K) : V? *)
+let find_maps_impl ~at (_typ_key : targ) (typ_val : targ) (maps : map list)
+    (key : Value.t) =
+  at |> ignore;
+  let result_opt =
+    List.fold_left
+      (fun acc map ->
+        match acc with
+        | Some _ -> acc
+        | None -> VMap.find_opt key map)
+      None maps
+  in
+  Ok (Value.opt typ_val.it result_opt)
+
+(* dec $add_map<K, V>(map<K, V>, K, V) : map<K, V> *)
+let add_map_impl ~at (typ_key : targ) (typ_val : targ) (map : map)
+    (key : Value.t) (v : Value.t) =
+  at |> ignore;
+  let new_map = VMap.add key v map in
+  Ok (value_of_map typ_key typ_val new_map)
+
+(* dec $adds_map<K, V>(map<K, V>, K*, V* ) : map<K, V> *)
+let adds_map_impl ~at (typ_key : targ) (typ_val : targ) (map : map)
+    (keys : Value.t list) (vals : Value.t list) =
+  try
+    let new_map = List.fold_left2 (fun m k v -> VMap.add k v m) map keys vals in
+    Ok (value_of_map typ_key typ_val new_map)
+  with Invalid_argument _ ->
+    let msg =
+      Printf.sprintf
+        "adds_map: key list length (%d) does not match value list length (%d)"
+        (List.length keys) (List.length vals)
+    in
+    Error (Err.RuntimeError (at, msg))
+
+(* dec $update_map<K, V>(map<K, V>, K, V) : map<K, V> *)
+let update_map_impl = add_map_impl
+
+(* --- 2. The Registration List --- *)
+
+let builtins : (string * Define.t) list =
+  [
+    ( "find_map",
+      Define.make_two_targs_two_args Parse.map (* map<K,V> *)
+        Parse.value (* K *)
+        find_map_impl );
+    ( "find_maps",
+      Define.make_two_targs_two_args
+        (Parse.list_of Parse.map) (* map<K,V>* *)
+        Parse.value (* K *)
+        find_maps_impl );
+    ( "add_map",
+      Define.make_two_targs_three_args Parse.map (* map<K,V> *)
+        Parse.value (* K *)
+        Parse.value (* V *)
+        add_map_impl );
+    ( "adds_map",
+      Define.make_two_targs_three_args Parse.map (* map<K,V> *)
+        (Parse.list_of Parse.value) (* K* *)
+        (Parse.list_of Parse.value) (* V* *)
+        adds_map_impl );
+    ( "update_map",
+      Define.make_two_targs_three_args Parse.map (* map<K,V> *)
+        Parse.value (* K *)
+        Parse.value (* V *)
+        update_map_impl );
+  ]

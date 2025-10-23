@@ -295,7 +295,7 @@ and upcast (ctx : Ctx.t) (typ : typ) (value : value) : value =
   match typ.it with
   | NumT `IntT -> (
       match value.it with
-      | NumV (`Nat n) -> Value.Make.int typ.it n
+      | NumV (`Nat n) -> Value.int n
       | NumV (`Int _) -> value
       | _ -> assert false)
   | VarT (tid, targs) -> (
@@ -333,7 +333,7 @@ and downcast (ctx : Ctx.t) (typ : typ) (value : value) : value =
   | NumT `NatT -> (
       match value.it with
       | NumV (`Nat _) -> value
-      | NumV (`Int i) when Bigint.(i >= zero) -> Value.Make.nat typ.it i
+      | NumV (`Int i) when Bigint.(i >= zero) -> Value.nat i
       | _ -> assert false)
   | VarT (tid, targs) -> (
       let tparams, deftyp = Ctx.find_typdef Local ctx tid in

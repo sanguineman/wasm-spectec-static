@@ -3,13 +3,8 @@
 
 include module type of Core.Types
 include module type of Core.Effects
-
 module Print : module type of Core.Print
-(** Provides all printing functions for all IL types. *)
-
 module Eq : module type of Core.Eq
-(** Provides all equality functions for all IL types. *)
-
 module Free : module type of Core.Free
 
 (** Constructors and operations for IL Values. *)

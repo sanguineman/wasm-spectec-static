@@ -49,6 +49,11 @@ let intersect_set (at : region) (targs : targ list) (values_input : value list)
   let set_b = set_of_value value_set_b in
   VSet.inter set_a set_b |> value_of_set typ_key
 
+let intersect_set_impl ~at (key_typ : targ) (set_a : VSet.t) (set_b : VSet.t) =
+  at |> ignore;
+  let result_set = VSet.inter set_a set_b in
+  Ok (value_of_set key_typ result_set)
+
 (* dec $union_set<K>(set<K>, set<K>) : set<K> *)
 
 let union_set (at : region) (targs : targ list) (values_input : value list) :
@@ -58,6 +63,11 @@ let union_set (at : region) (targs : targ list) (values_input : value list) :
   let set_a = set_of_value value_set_a in
   let set_b = set_of_value value_set_b in
   VSet.union set_a set_b |> value_of_set typ_key
+
+let union_set_impl ~at (key_typ : targ) (set_a : VSet.t) (set_b : VSet.t) =
+  at |> ignore;
+  let result_set = VSet.union set_a set_b in
+  Ok (value_of_set key_typ result_set)
 
 (* dec $unions_set<K>(set<K>* ) : set<K> *)
 
@@ -107,3 +117,40 @@ let eq_set (at : region) (targs : targ list) (values_input : value list) : value
     BoolV (VSet.equal set_a set_b) $$$ { vid; typ }
   in
   value
+
+let unions_set_impl ~at (key_typ : targ) (sets : VSet.t list) =
+  at |> ignore;
+  let result_set = List.fold_left VSet.union VSet.empty sets in
+  Ok (value_of_set key_typ result_set)
+
+let diff_set_impl ~at (key_typ : targ) (set_a : VSet.t) (set_b : VSet.t) =
+  at |> ignore;
+  let result_set = VSet.diff set_a set_b in
+  Ok (value_of_set key_typ result_set)
+
+(* Note the return type: these return a bool, not a set. *)
+let sub_set_impl ~at (_key_typ : targ) (set_a : VSet.t) (set_b : VSet.t) =
+  at |> ignore;
+  Ok (Value.bool (VSet.subset set_a set_b))
+
+let eq_set_impl ~at (_key_typ : targ) (set_a : VSet.t) (set_b : VSet.t) =
+  at |> ignore;
+  Ok (Value.bool (VSet.equal set_a set_b))
+
+(* --- 2. The Registration List --- *)
+(* This list connects the string names to the wrapped implementations. *)
+(* We use new wrappers like 'make_t1_2' (1 targ, 2 args) *)
+(* and 'Parse.set' (our new custom parser). *)
+
+let builtins : (string * Define.t) list =
+  [
+    ( "intersect_set",
+      Define.make_one_targ_two_args Parse.set Parse.set intersect_set_impl );
+    ( "union_set",
+      Define.make_one_targ_two_args Parse.set Parse.set union_set_impl );
+    ( "unions_set",
+      Define.make_one_targ_one_arg (Parse.list_of Parse.set) unions_set_impl );
+    ("diff_set", Define.make_one_targ_two_args Parse.set Parse.set diff_set_impl);
+    ("sub_set", Define.make_one_targ_two_args Parse.set Parse.set sub_set_impl);
+    ("eq_set", Define.make_one_targ_two_args Parse.set Parse.set eq_set_impl);
+  ]

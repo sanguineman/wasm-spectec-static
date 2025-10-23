@@ -153,3 +153,89 @@ let bitacc (at : region) (targs : targ list) (values_input : value list) : value
   let rawint_h = bigint_of_value value_h in
   let rawint_l = bigint_of_value value_l in
   bitacc' rawint_b rawint_h rawint_l |> Value.int
+
+(* dec $shl(int, int) : int *)
+let rec shl_impl' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
+  if Bigint.(o > zero) then shl_impl' Bigint.(v * (one + one)) Bigint.(o - one)
+  else v
+
+let shl_impl ~at (base : Bigint.t) (offset : Bigint.t) : (Value.t, Err.t) result
+    =
+  at |> ignore;
+  (* Per user request *)
+  Ok (Value.int (shl_impl' base offset))
+
+(* dec $shr(int, int) : int *)
+let rec shr_impl' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
+  if Bigint.(o > zero) then
+    let v_shifted = Bigint.(v / (one + one)) in
+    shr_impl' v_shifted Bigint.(o - one)
+  else v
+
+let shr_impl ~at (base : Bigint.t) (offset : Bigint.t) : (Value.t, Err.t) result
+    =
+  at |> ignore;
+  Ok (Value.int (shr_impl' base offset))
+
+(* dec $shr_arith(int, int, int) : int *)
+let shr_arith_impl' (v : Bigint.t) (o : Bigint.t) (m : Bigint.t) : Bigint.t =
+  let rec shr_arith'' (v : Bigint.t) (o : Bigint.t) : Bigint.t =
+    if Bigint.(o > zero) then
+      let v_shifted = Bigint.((v / (one + one)) + m) in
+      shr_arith'' v_shifted Bigint.(o - one)
+    else v
+  in
+  shr_arith'' v o
+
+let shr_arith_impl ~at (base : Bigint.t) (offset : Bigint.t)
+    (modulus : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (shr_arith_impl' base offset modulus))
+
+(* dec $pow2(nat) : int *)
+(* Note: pow2' uses shl_impl', so we redefine it here *)
+let pow2_impl' (w : Bigint.t) : Bigint.t = shl_impl' Bigint.one w
+
+let pow2_impl ~at (width : Bigint.t) : (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (pow2_impl' width))
+
+(* dec $to_int(int, bitstr) : int *)
+let rec to_int_impl' (w : Bigint.t) (n : Bigint.t) : Bigint.t =
+  let two = Bigint.(one + one) in
+  let w' = pow2_impl' w in
+  (* Use the helper from above *)
+  if Bigint.(n >= w' / two) then to_int_impl' w Bigint.(n - w')
+  else if Bigint.(n < -(w' / two)) then to_int_impl' w Bigint.(n + w')
+  else n
+
+let to_int_impl ~at (width : Bigint.t) (bitstr : Bigint.t) :
+    (Value.t, Err.t) result =
+  at |> ignore;
+  Ok (Value.int (to_int_impl' width bitstr))
+
+(* dec $to_bitstr(int, int) : bitstr *)
+let rec to_bitstr_impl' (w : Bigint.t) (n : Bigint.t) : Bigint.t =
+  let w' = pow2_impl' w in
+  if Bigint.(n >= w') then Bigint.(n % w')
+  else if Bigint.(n < zero) then to_bitstr_impl' w Bigint.(n + w')
+  else n
+
+let to_bitstr_impl ~at (width : Bigint.t) (rawint : Bigint.t) :
+    (Value.t, Err.t) result =
+  at |> ignore;
+  (* The original returned bitstr, which we assume is just an int *)
+  Ok (Value.int (to_bitstr_impl' width rawint))
+
+let builtins : (string * Define.t) list =
+  [
+    ("shl", Define.make_two_args Parse.int Parse.int shl_impl);
+    ("shr", Define.make_two_args Parse.int Parse.int shr_impl);
+    ( "shr_arith",
+      Define.make_three_args Parse.int Parse.int Parse.int shr_arith_impl );
+    ( "pow2",
+      (* The original took a nat, so we use Parse.nat *)
+      Define.make_one_arg Parse.nat pow2_impl );
+    ("to_int", Define.make_two_args Parse.int Parse.int to_int_impl);
+    ("to_bitstr", Define.make_two_args Parse.int Parse.int to_bitstr_impl);
+  ]
