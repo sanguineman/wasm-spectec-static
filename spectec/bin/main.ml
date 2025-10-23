@@ -45,51 +45,21 @@ let parse_command =
        try
          let spec = List.concat_map Frontend.Parse.parse_file filenames in
          let spec_il = elab_spec spec in
-         let vid_counter = ref 0 in
-         let tid_counter = ref 0 in
-         Effect.Deep.try_with
-           (fun () ->
-             let value_program =
-               P4.Parse.parse_file includes_target filename_target
-             in
-             let unparsed_string =
-               Format.asprintf "%a\n"
-                 (Concrete.Pp.pp_program spec_il)
-                 value_program
-             in
-             if roundtrip then
-               let parsed_program =
-                 P4.Parse.parse_string filename_target unparsed_string
-               in
-               Il.Ast.Eq.eq_value ~dbg:true value_program parsed_program
-               |> (fun b ->
-               if b then "Roundtrip successful" else "Roundtrip failed")
-               |> print_endline
-             else unparsed_string |> print_endline)
-           ()
-           {
-             effc =
-               (fun (type a) (eff : a Effect.t) ->
-                 match eff with
-                 | Il.Ast.FreshVid ->
-                     Some
-                       (fun (k : (a, _) Effect.Deep.continuation) ->
-                         let id = !vid_counter in
-                         incr vid_counter;
-                         Effect.Deep.continue k (fun () -> id))
-                 | Il.Ast.ValueCreated _ ->
-                     Some
-                       (fun (k : (a, _) Effect.Deep.continuation) ->
-                         (* No-op *)
-                         Effect.Deep.continue k ())
-                 | Il.Ast.FreshTid ->
-                     Some
-                       (fun (k : (a, _) Effect.Deep.continuation) ->
-                         let tid = "FRESH__" ^ string_of_int !tid_counter in
-                         incr tid_counter;
-                         Effect.Deep.continue k (fun () -> tid))
-                 | _ -> None (* Other effects *));
-           }
+         let value_program =
+           Runner.Run.parse_file includes_target filename_target
+         in
+         let unparsed_string =
+           Format.asprintf "%a\n" (Concrete.Pp.pp_program spec_il) value_program
+         in
+         if roundtrip then
+           let parsed_program =
+             Runner.Run.parse_string filename_target unparsed_string
+           in
+           Il.Ast.Eq.eq_value ~dbg:true value_program parsed_program
+           |> (fun b ->
+           if b then "Roundtrip successful" else "Roundtrip failed")
+           |> print_endline
+         else unparsed_string |> print_endline
        with
        | Util.Error.ParseError (_, msg) -> Format.printf "ill-formed: %s\n" msg
        | Util.Error.InterpError (_, msg) ->
@@ -112,45 +82,11 @@ let run_il_command =
        try
          let spec = List.concat_map Frontend.Parse.parse_file filenames_spec in
          let spec_il = elab_spec spec in
-         let vid_counter = ref 0 in
-         let tid_counter = ref 0 in
-         Effect.Deep.try_with
-           (fun () ->
-             let value_program =
-               P4.Parse.parse_file includes_target filename_target
-             in
-             let ctx_init =
-               Interp_il.Runner.init ~debug ~profile filename_target
-             in
-             let _, _ =
-               Interp_il.Runner.run_relation ctx_init spec_il "Program_ok"
-                 [ value_program ]
-             in
-             Format.printf "Interpreter succeeded\n")
-           ()
-           {
-             effc =
-               (fun (type a) (eff : a Effect.t) ->
-                 match eff with
-                 | Il.Ast.FreshVid ->
-                     Some
-                       (fun (k : (a, _) Effect.Deep.continuation) ->
-                         let id = !vid_counter in
-                         incr vid_counter;
-                         Effect.Deep.continue k (fun () -> id))
-                 | Il.Ast.ValueCreated _ ->
-                     Some
-                       (fun (k : (a, _) Effect.Deep.continuation) ->
-                         (* No-op *)
-                         Effect.Deep.continue k ())
-                 | Il.Ast.FreshTid ->
-                     Some
-                       (fun (k : (a, _) Effect.Deep.continuation) ->
-                         let tid = "FRESH__" ^ string_of_int !tid_counter in
-                         incr tid_counter;
-                         Effect.Deep.continue k (fun () -> tid))
-                 | _ -> None (* Other effects *));
-           }
+         let _, _ =
+           Runner.Run.interp_il ~debug ~profile spec_il includes_target
+             filename_target
+         in
+         Format.printf "Interpreter succeeded\n"
        with
        | Util.Error.ParseError (_, msg) -> Format.printf "ill-formed: %s\n" msg
        | Util.Error.InterpError (_, msg) ->
