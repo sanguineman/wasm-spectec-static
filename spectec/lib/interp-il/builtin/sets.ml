@@ -1,6 +1,5 @@
 open Xl
 open Il.Ast
-open Error
 open Util.Source
 
 (* Value set *)
@@ -11,31 +10,13 @@ type set = VSet.t
 
 (* Conversion between meta-sets and OCaml lists *)
 
-let set_of_value (value : value) : set =
-  match value.it with
-  | CaseV
-      ( [ [ { it = Atom.LBrace; _ } ]; [ { it = Atom.RBrace; _ } ] ],
-        [ value_elements ] ) ->
-      let values_element = Value.get_list value_elements in
-      VSet.of_list values_element
-  | _ ->
-      error no_region
-        (Format.asprintf "expected a set, but got %s" (Value.to_string value))
-
 let value_of_set (typ_key : typ) (set : set) : value =
-  let values_element = VSet.elements set in
-  let value_elements =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.IterT (typ_key, Il.Ast.List) in
-    ListV values_element $$$ { vid; typ }
-  in
+  let value_elements = VSet.elements set |> Value.list typ_key in
   let value =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.VarT ("set" $ no_region, [ typ_key ]) in
-    CaseV
-      ( [ [ Atom.LBrace $ no_region ]; [ Atom.RBrace $ no_region ] ],
-        [ value_elements ] )
-    $$$ { vid; typ }
+    let typ = Typ.var "set" [ typ_key ] in
+    ( [ [ Atom.LBrace $ no_region ]; [ Atom.RBrace $ no_region ] ],
+      [ value_elements ] )
+    |> Value.Make.case typ
   in
   value
 

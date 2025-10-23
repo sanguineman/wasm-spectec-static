@@ -1,6 +1,5 @@
 open Xl
 open Il.Ast
-open Error
 open Util.Source
 
 (* Value map *)
@@ -11,55 +10,24 @@ type map = Value.t VMap.t
 
 (* Conversion between meta-maps and OCaml assoc lists *)
 
-let map_of_value (value : value) : map =
-  let tuple_of_value (value : value) : value * value =
-    match value.it with
-    | CaseV ([ []; [ { it = Atom.Colon; _ } ]; [] ], [ value_key; value_value ])
-      ->
-        (value_key, value_value)
-    | _ ->
-        error no_region
-          (Format.asprintf "expected a pair, but got %s" (Value.to_string value))
-  in
-  match value.it with
-  | CaseV
-      ( [ [ { it = Atom.LBrace; _ } ]; [ { it = Atom.RBrace; _ } ] ],
-        [ value_pairs ] ) ->
-      Value.get_list value_pairs |> List.map tuple_of_value
-      |> List.fold_left
-           (fun map (value_key, value_value) ->
-             VMap.add value_key value_value map)
-           VMap.empty
-  | _ ->
-      error no_region
-        (Format.asprintf "expected a map, but got %s" (Value.to_string value))
-
 let value_of_map (typ_key : typ) (typ_value : typ) (map : map) : value =
   let value_of_tuple ((value_key, value_value) : value * value) : value =
     let value =
-      let vid = Value.fresh () in
-      let typ = Il.Ast.VarT ("pair" $ no_region, [ typ_key; typ_value ]) in
-      CaseV ([ []; [ Atom.Colon $ no_region ]; [] ], [ value_key; value_value ])
-      $$$ { vid; typ }
+      let typ = Typ.var "pair" [ typ_key; typ_value ] in
+      ([ []; [ Atom.Colon $ no_region ]; [] ], [ value_key; value_value ])
+      |> Value.Make.case typ
     in
     value
   in
   let value_pairs =
-    let vid = Value.fresh () in
-    let typ =
-      Il.Ast.IterT
-        ( Il.Ast.VarT ("pair" $ no_region, [ typ_key; typ_value ]) $ no_region,
-          Il.Ast.List )
-    in
-    ListV (VMap.bindings map |> List.map value_of_tuple) $$$ { vid; typ }
+    let typ_inner = Typ.var "pair" [ typ_key; typ_value ] $ no_region in
+    VMap.bindings map |> List.map value_of_tuple |> Value.list typ_inner
   in
   let value =
-    let vid = Value.fresh () in
-    let typ = Il.Ast.VarT ("map" $ no_region, [ typ_key; typ_value ]) in
-    CaseV
-      ( [ [ Atom.LBrace $ no_region ]; [ Atom.RBrace $ no_region ] ],
-        [ value_pairs ] )
-    $$$ { vid; typ }
+    let typ = Typ.var "map" [ typ_key; typ_value ] in
+    ( [ [ Atom.LBrace $ no_region ]; [ Atom.RBrace $ no_region ] ],
+      [ value_pairs ] )
+    |> Value.Make.case typ
   in
   value
 
@@ -71,7 +39,7 @@ let find_map ~at (_typ_key : targ) (typ_val : targ) (map : map) (key : Value.t)
     =
   at |> ignore;
   let result_opt = VMap.find_opt key map in
-  Ok (Value.opt typ_val.it result_opt)
+  Ok (Value.opt typ_val result_opt)
 
 (* dec $find_maps<K, V>(map<K, V>*, K) : V? *)
 
@@ -86,7 +54,7 @@ let find_maps ~at (_typ_key : targ) (typ_val : targ) (maps : map list)
         | None -> VMap.find_opt key map)
       None maps
   in
-  Ok (Value.opt typ_val.it result_opt)
+  Ok (Value.opt typ_val result_opt)
 
 (* dec $add_map<K, V>(map<K, V>, K, V) : map<K, V> *)
 

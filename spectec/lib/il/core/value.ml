@@ -4,8 +4,6 @@ open Effects
 
 type t = value
 
-(* Ticker for node identifier tracking *)
-
 let rec compare (value_l : t) (value_r : t) =
   let tag (value : t) =
     match value.it with
@@ -50,15 +48,7 @@ and compares (values_l : t list) (values_r : t list) : int =
       let cmp = compare value_l value_r in
       if cmp <> 0 then cmp else compares values_l values_r
 
-let to_string t = Print.string_of_value t
 let eq (value_l : t) (value_r : t) : bool = compare value_l value_r = 0
-let tick = ref 0
-let refresh () = tick := 0
-
-let fresh () =
-  let id = !tick in
-  tick := id + 1;
-  id
 
 let with_fresh_vid (typ : typ') : vnote =
   let vid = Effect.perform FreshVid () in
@@ -70,21 +60,21 @@ let make_val (typ : typ') (v : value') : t =
   value
 
 module Make = struct
-  let value (t' : typ') (v : value') : value = make_val t' v
-  let bool (t' : typ') (b : bool) : value = make_val t' (BoolV b)
-  let num (t' : typ') (n : num) : value = make_val t' (NumV n)
-  let nat (t' : typ') (n : Bigint.t) : value = make_val t' (NumV (`Nat n))
-  let int (t' : typ') (n : Bigint.t) : value = make_val t' (NumV (`Int n))
-  let text (t' : typ') (s : string) : value = make_val t' (TextV s)
-  let tuple (t' : typ') (vs : value list) : value = make_val t' (TupleV vs)
+  let value (t' : typ') (v : value') : t = make_val t' v
+  let bool (t' : typ') (b : bool) : t = make_val t' (BoolV b)
+  let num (t' : typ') (n : num) : t = make_val t' (NumV n)
+  let nat (t' : typ') (n : Bigint.t) : t = make_val t' (NumV (`Nat n))
+  let int (t' : typ') (n : Bigint.t) : t = make_val t' (NumV (`Int n))
+  let text (t' : typ') (s : string) : t = make_val t' (TextV s)
+  let tuple (t' : typ') (vs : t list) : t = make_val t' (TupleV vs)
 
   let record (t' : typ') (fs : valuefield list) : value =
     make_val t' (StructV fs)
 
-  let opt (t' : typ') (v : value option) : value = make_val t' (OptV v)
-  let list (t' : typ') (vs : value list) : value = make_val t' (ListV vs)
+  let opt (t' : typ') (v : t option) : t = make_val t' (OptV v)
+  let list (t' : typ') (vs : t list) : t = make_val t' (ListV vs)
 
-  let case (t' : typ') (cases : mixop * value list) : value =
+  let case (t' : typ') (cases : mixop * value list) : t =
     make_val t' (CaseV cases)
 end
 
@@ -106,18 +96,15 @@ let get_opt (value : t) =
 let get_struct (value : t) =
   match value.it with StructV fields -> fields | _ -> failwith "get_struct"
 
-let bool (b : bool) : t = Make.bool BoolT b
-let nat (i : Bigint.t) : t = NumV (`Nat i) |> make_val (NumT `NatT)
-let int (i : Bigint.t) : t = NumV (`Int i) |> make_val (NumT `IntT)
-let text (s : string) : t = TextV s |> make_val TextT
-let func (id : id) : t = FuncV id |> make_val FuncT
+let bool (b : bool) : t = Make.bool Typ.bool b
+let nat (i : Bigint.t) : t = Make.nat Typ.nat i
+let int (i : Bigint.t) : t = Make.int Typ.int i
+let text (s : string) : t = Make.text Typ.text s
+let func (id : id) : t = FuncV id |> make_val Typ.func
 
 let tuple (vs : t list) : t =
   let typs = List.map (fun v -> v.note.typ $ no_region) vs in
-  TupleV vs |> make_val (TupleT typs)
+  TupleV vs |> make_val (Typ.tuple typs)
 
-let opt (typ : typ') (v : t option) : t =
-  OptV v |> make_val (IterT (typ $ no_region, Opt))
-
-let list (typ : typ') (vs : t list) : t =
-  ListV vs |> make_val (IterT (typ $ no_region, List))
+let opt (typ : typ) (v : t option) : t = OptV v |> make_val (Typ.opt typ)
+let list (typ : typ) (vs : t list) : t = ListV vs |> make_val (Typ.list typ)

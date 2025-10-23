@@ -11,6 +11,13 @@ module Free : module type of Core.Free
 module Value : sig
   include module type of Core.Value
 
-  val to_string : value -> string
-  val compare : value -> value -> int
+  val to_string : t -> string
+end
+
+(** Constructors and operations on IL Types. *)
+module Typ : sig
+  include module type of Core.Typ
+
+  val to_string : typ -> string
+  val eq : typ -> typ -> bool
 end

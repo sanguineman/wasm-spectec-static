@@ -2,10 +2,11 @@ open Il.Ast
 open Xl
 open Util.Source
 
+let ( let* ) = Result.bind
+
 type 'a t = region -> Value.t -> ('a, Err.t) result
 
 let value : Value.t t = fun _at v -> Ok v
-let ( let* ) = Result.bind
 
 let text : string t =
  fun at v ->

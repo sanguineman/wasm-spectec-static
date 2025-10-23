@@ -2,7 +2,6 @@ open Domain.Lib
 open Xl
 open Il.Ast
 module Hint = Runtime_static.Rel.Hint
-module Typ = Runtime_dynamic.Typ
 module Cache = Runtime_dynamic.Cache
 module Rel = Runtime_dynamic_il.Rel
 open Runtime_dynamic_il.Envs
@@ -46,9 +45,8 @@ let rec assign_exp (ctx : Ctx.t) (exp : exp) (value : value) : Ctx.t =
       List.fold_left
         (fun ctx (id, typ, iters) ->
           let value_sub =
-            let vid = Value.fresh () in
             let typ = Typ.iterate typ (iters @ [ Opt ]) in
-            OptV None $$$ { vid; typ = typ.it }
+            None |> Value.Make.opt typ.it
           in
           Ctx.add_value Local ctx (id, iters @ [ Opt ]) value_sub)
         ctx vars
@@ -60,9 +58,8 @@ let rec assign_exp (ctx : Ctx.t) (exp : exp) (value : value) : Ctx.t =
         (fun ctx (id, typ, iters) ->
           let value_sub =
             let value = Ctx.find_value Local ctx (id, iters) in
-            let vid = Value.fresh () in
             let typ = Typ.iterate typ (iters @ [ Opt ]) in
-            OptV (Some value) $$$ { vid; typ = typ.it }
+            Some value |> Value.Make.opt typ.it
           in
           Ctx.add_value Local ctx (id, iters @ [ Opt ]) value_sub)
         ctx vars
@@ -87,9 +84,8 @@ let rec assign_exp (ctx : Ctx.t) (exp : exp) (value : value) : Ctx.t =
             List.map (fun ctx -> Ctx.find_value Local ctx (id, iters)) ctxs
           in
           let value_sub =
-            let vid = Value.fresh () in
             let typ = Typ.iterate typ (iters @ [ List ]) in
-            ListV values $$$ { vid; typ = typ.it }
+            values |> Value.Make.list typ.it
           in
           Ctx.add_value Local ctx (id, iters @ [ List ]) value_sub)
         ctx vars
@@ -784,9 +780,8 @@ and eval_iter_prem_list (ctx : Ctx.t) (prem : prem) (vars : var list) :
     List.fold_left2
       (fun ctx (id_binding, typ_binding, iters_binding) values_binding ->
         let value_binding =
-          let vid = Value.fresh () in
           let typ = Typ.iterate typ_binding (iters_binding @ [ List ]) in
-          ListV values_binding $$$ { vid; typ = typ.it }
+          values_binding |> Value.Make.list typ.it
         in
         Ctx.add_value Local ctx
           (id_binding, iters_binding @ [ List ])

@@ -1,18 +1,17 @@
 open Il.Ast
-open Util.Source
 
 (* dec $rev_<X>(X* ) : X* *)
 
 let rev_ ~at (typ : targ) (vs : Value.t list) : (Value.t, Err.t) result =
   at |> ignore;
-  Ok (Value.list typ.it (List.rev vs))
+  Ok (Value.list typ (List.rev vs))
 
 (* dec $concat_<X>((X* )* ) : X* *)
 
 let concat_ ~at (typ : targ) (vss : Value.t list list) : (Value.t, Err.t) result
     =
   at |> ignore;
-  Ok (Value.list typ.it (List.concat vss))
+  Ok (Value.list typ (List.concat vss))
 
 (* dec $distinct_<K>(K* ) : bool *)
 
@@ -34,8 +33,8 @@ let partition_ ~at (typ : targ) (vs : Value.t list) (n : Bigint.t) :
       |> List.mapi (fun idx v -> (idx, v))
       |> List.partition (fun (idx, _) -> idx < len)
     in
-    let v_left = Value.list typ.it (List.map snd left) in
-    let v_right = Value.list typ.it (List.map snd right) in
+    let v_left = Value.list typ (List.map snd left) in
+    let v_right = Value.list typ (List.map snd right) in
     Ok (Value.tuple [ v_left; v_right ])
   with _ ->
     Error (Err.runtime at "partition: index is too large to be an integer")
@@ -54,7 +53,7 @@ let assoc_ ~at (_typ_x : targ) (typ_y : targ) (key_query : Value.t)
         | None -> None)
       None pairs
   in
-  Ok (Value.opt typ_y.it value_opt)
+  Ok (Value.opt typ_y value_opt)
 
 let builtins =
   [
