@@ -1,7 +1,5 @@
-open Il.Ast
+open Il
 open Error
-
-(* Initializer *)
 
 let ( let* ) = Result.bind
 

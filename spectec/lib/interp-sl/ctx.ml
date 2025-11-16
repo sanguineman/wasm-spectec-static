@@ -1,5 +1,6 @@
 open Domain.Lib
 open Runtime_dynamic
+module Value = Il.Value
 open Runtime_dynamic_sl
 open Envs
 open Sl.Ast
@@ -200,7 +201,7 @@ let sub_opt (ctx : t) (vars : var list) : t option =
   let values =
     List.map
       (fun (id, _typ, iters) ->
-        find_value Local ctx (id, iters @ [ Il.Ast.Opt ]) |> Value.get_opt)
+        find_value Local ctx (id, iters @ [ Il.Opt ]) |> Value.get_opt)
       vars
   in
   (* Iteration is valid when all variables agree on their optionality *)
@@ -239,7 +240,7 @@ let sub_list (ctx : t) (vars : var list) : t list =
   let values_batch =
     List.map
       (fun (id, _typ, iters) ->
-        find_value Local ctx (id, iters @ [ Il.Ast.List ]) |> Value.get_list)
+        find_value Local ctx (id, iters @ [ Il.List ]) |> Value.get_list)
       vars
     |> transpose
   in

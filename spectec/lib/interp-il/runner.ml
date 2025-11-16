@@ -1,4 +1,4 @@
-open Il.Ast
+open Il
 module Cache = Runtime_dynamic.Cache
 module F = Format
 open Attempt
@@ -9,8 +9,6 @@ let run_relation (ctx : Ctx.t) (spec : spec) (rid : id') (values : value list) :
   let ctx = Interp.load_spec ctx spec in
   let+ ctx, values = Interp.invoke_rel ctx (rid $ no_region) values in
   (ctx, values)
-
-(* Entry point : Run typing rule *)
 
 let init ?(debug : bool = false) ?(profile : bool = false)
     (filename_target : string) : Ctx.t =
