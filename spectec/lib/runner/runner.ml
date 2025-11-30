@@ -1,5 +1,9 @@
-open Il
-open Util.Source
+open Lang
+open Lang.Il
+open Pass
+open Interface
+open Interp
+open Common.Source
 module Error = Error
 
 type 'a pipeline_result = ('a, Error.t) result
@@ -15,19 +19,19 @@ module Handlers = struct
         effc =
           (fun (type a) (eff : a Effect.t) ->
             match eff with
-            | FreshVid ->
+            | Effects.FreshVid ->
                 Some
                   (fun (k : (a, _) Effect.Deep.continuation) ->
                     let id = !vid_counter in
                     incr vid_counter;
                     Effect.Deep.continue k (fun () -> id))
-            | FreshTid ->
+            | Effects.FreshTid ->
                 Some
                   (fun (k : (a, _) Effect.Deep.continuation) ->
                     let tid = "FRESH__" ^ string_of_int !tid_counter in
                     incr tid_counter;
                     Effect.Deep.continue k (fun () -> tid))
-            | ValueCreated _ ->
+            | Effects.ValueCreated _ ->
                 Some
                   (fun (k : (a, _) Effect.Deep.continuation) ->
                     (* No-op *)
@@ -38,6 +42,52 @@ module Handlers = struct
   (* SL interpreter uses IL handler for now *)
   let sl = il
 end
+
+(* Transformations *)
+
+let parse_spec_files filenames : El.spec pipeline_result =
+  let parse_spec_files () =
+    List.concat_map Frontend.Parse.parse_file filenames |> Result.ok
+  in
+  try parse_spec_files ()
+  with Frontend.Error.ParseError (at, msg) ->
+    Error.ParseError (at, msg) |> Result.error
+
+let elaborate spec_el : Il.spec pipeline_result =
+  let elaborate () =
+    Elaborate.Elab.elab_spec spec_el
+    |> Result.map_error (fun elab_err_list -> Error.ElabError elab_err_list)
+  in
+  try elaborate ()
+  with Elaborate.Error.ElabError (at, failtraces) ->
+    Error.ElabError [ (at, failtraces) ] |> Result.error
+
+let structure spec_il : Sl.spec = Structure.Struct.struct_spec spec_il
+
+(* Interpreters *)
+
+let eval_il ~debug ~profile spec_il rid values_input filename_target :
+    (Eval_Il.Ctx.t * Il.Value.t list) pipeline_result =
+  let eval_il () =
+    Eval_Il.Runner.run_relation_fresh ~debug ~profile spec_il rid values_input
+      filename_target
+    |> Result.ok
+  in
+  try eval_il ()
+  with Eval_Il.Error.InterpError (at, msg) ->
+    Error.IlInterpError (at, msg) |> Result.error
+
+let eval_sl spec_sl rid values_input filename_target :
+    (Eval_Sl.Ctx.t * Il.Value.t list) pipeline_result =
+  let eval_sl () =
+    Eval_Sl.Runner.run_relation_fresh spec_sl rid values_input filename_target
+    |> Result.ok
+  in
+  try eval_sl ()
+  with Eval_Sl.Error.InterpError (at, msg) ->
+    Error.SlInterpError (at, msg) |> Result.error
+
+(* P4 Parsing *)
 
 let parse_p4_file includes_target filename_target : Il.Value.t pipeline_result =
   let parse_p4_file () =
@@ -55,51 +105,17 @@ let parse_p4_string filename_target string : Il.Value.t pipeline_result =
   with P4.Error.P4ParseError (at, msg) ->
     Error.P4ParseError (at, msg) |> Result.error
 
-let parse_spec_files filenames : El.Ast.spec pipeline_result =
-  let parse_spec_files () =
-    List.concat_map Frontend.Parse.parse_file filenames |> Result.ok
-  in
-  try parse_spec_files ()
-  with Frontend.Error.ParseError (at, msg) ->
-    Error.ParseError (at, msg) |> Result.error
-
-let elaborate spec_el : Il.spec pipeline_result =
-  let elaborate () =
-    Elaborate.Elab.elab_spec spec_el
-    |> Result.map_error (fun elab_err_list -> Error.ElabError elab_err_list)
-  in
-  try elaborate ()
-  with Elaborate.Error.ElabError (at, failtraces) ->
-    Error.ElabError [ (at, failtraces) ] |> Result.error
-
-let interp_il ~debug ~profile spec_il includes_target filename_target :
-    (Interp_il.Ctx.t * Il.Value.t list) pipeline_result =
-  let interp_il () =
-    let* value_program = parse_p4_file includes_target filename_target in
-    let ctx_init = Interp_il.Runner.init ~debug ~profile filename_target in
-    Interp_il.Runner.run_relation ctx_init spec_il "Program_ok"
-      [ value_program ]
-    |> Result.ok
-  in
-  try Handlers.il interp_il
-  with Interp_il.Error.InterpError (at, msg) ->
-    Error.IlInterpError (at, msg) |> Result.error
-
-let structure spec_il : Sl.Ast.spec = Structure.Struct.struct_spec spec_il
-
-let interp_sl spec_il includes_target filename_target :
-    (Interp_sl.Ctx.t * Il.Value.t list) pipeline_result =
-  let interp_sl () =
-    let* value_program = parse_p4_file includes_target filename_target in
-    Interp_sl.Runner.run_relation_fresh spec_il "Program_ok" [ value_program ]
-      filename_target
-    |> Result.ok
-  in
-  try Handlers.sl interp_sl
-  with Interp_sl.Error.InterpError (at, msg) ->
-    Error.SlInterpError (at, msg) |> Result.error
-
 (* Composed functions *)
+
+let eval_il_p4_typechecker ~debug ~profile spec_il includes_target
+    filename_target : (Eval_Il.Ctx.t * Il.Value.t list) pipeline_result =
+  let* value_program = parse_p4_file includes_target filename_target in
+  eval_il ~debug ~profile spec_il "Program_ok" [ value_program ] filename_target
+
+let eval_sl_p4_typechecker spec_sl includes_target filename_target :
+    (Eval_Sl.Ctx.t * Il.Value.t list) pipeline_result =
+  let* value_program = parse_p4_file includes_target filename_target in
+  eval_sl spec_sl "Program_ok" [ value_program ] filename_target
 
 let parse_p4_file_with_roundtrip roundtrip filenames_spec includes_target
     filename_target : string pipeline_result =
