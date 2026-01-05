@@ -13,7 +13,7 @@ syntax binop_(Fnn) =
   | ADD | SUB | MUL | DIV | ...
 ```
 
-However, while inspecting spectec/lib/lang/el/types.ml, I found that there exists a syntax that appears to allow type parameters in syntax declaration, as shown below:
+However, while inspecting [spectec/lib/lang/el/types.ml](https://github.com/kaist-plrg/wasm-static-semantics-algo/blob/static-semantics-algo/spectec/lib/lang/el/types.ml), I found that there exists a syntax that appears to allow type parameters in syntax declaration, as shown below:
 ```spectec
 (* Definitions *)
 
