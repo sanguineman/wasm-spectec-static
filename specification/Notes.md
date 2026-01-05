@@ -33,8 +33,6 @@ syntax binop_<numtype> =
   | ADD | SUB | MUL | DIV | ...
 ```
 
-However, this fails to parse with an "unexpected token" error at the first line. This seems to occur because of the parser
-bug in P4-SpecTec that does not recognize type parameters in syntax declaration.
 However, this fails to parse, producing an “unexpected token” error at the first line. This suggests that the current P4-SpecTec parser does not properly recognize type parameters in syntax declarations, despite the apparent support in the AST definition.
 
 To work around this issue, I defined separate syntax for integer and float binops as follows:
