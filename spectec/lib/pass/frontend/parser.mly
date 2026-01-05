@@ -95,7 +95,7 @@ let exit_scope () = vars := List.hd !scopes; scopes := List.tl !scopes
 %right ARROW ARROW_SUB
 %left SEMICOLON
 %left DOT DOT2 DOT3
-%left PLUS MINUS PLUS2 
+%left PLUS MINUS PLUS2
 %left STAR SLASH BACKSLASH
 
 %start spec check_atom
@@ -370,7 +370,7 @@ casetyp :
 deftyp : deftyp_ { $1 @@@ $sloc }
 deftyp_ :
   | LBRACE comma_list(fieldtyp) RBRACE
-    { 
+    {
       match $2 with
       | [] -> error (at $sloc) "empty struct type"
       | _ -> StructTD $2
@@ -526,7 +526,7 @@ exp_call_ :
   | DOLLAR defid { CallE ($2, [], []) }
   | DOLLAR defid_lparen comma_list(arg) RPAREN
     { CallE ($2, [], $3) }
-  | DOLLAR defid_langle comma_list(targ) RANGLE 
+  | DOLLAR defid_langle comma_list(targ) RANGLE
     { CallE ($2, $3, []) }
   | DOLLAR defid_langle comma_list(targ) RANGLE_LPAREN comma_list(arg) RPAREN
     { CallE ($2, $3, $5) }
@@ -551,7 +551,7 @@ exp_prim_ :
   | EPS { EpsE }
   | LBRACE comma_list(fieldexp) RBRACE { StrE $2 }
   | LPAREN comma_list(exp_bin) RPAREN
-    { 
+    {
       match $2 with
       | [] -> ParenE (TupleE [] @@@ $sloc)
       | [ exp ] -> ParenE exp
@@ -716,6 +716,8 @@ hint :
 def :
   | def_ NL2* { $1 @@@ $loc($1) }
 def_ :
+  | SYNTAX varid_langle_bind enter_scope comma_list(tparam) RANGLE exit_scope
+    { SynD [ ($2, $4) ] }
   | SYNTAX comma_list(synid)
     {
       match $2 with
